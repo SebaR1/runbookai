@@ -62,10 +62,10 @@ flowchart LR
 ### Flujo de ingesta
 
 1. El front sube el archivo a la System API.
-2. La System API lo guarda en Azurite, crea el registro en MongoDB (estado `pendiente`, con hash) y responde de inmediato.
-3. La System API pasa el documento a `indexando` y se lo manda al RAG service (`/ingest`).
+2. La System API lo guarda en Azurite, crea el registro en MongoDB (estado `pending`, con hash) y responde de inmediato.
+3. La System API pasa el documento a `indexing` y se lo manda al RAG service (`/ingest`).
 4. El RAG service extrae el texto, genera chunks, pide los embeddings a Ollama y los guarda en Chroma con su metadata.
-5. La System API actualiza el estado a `indexado` (o `error` con el detalle). El front hace polling de la lista de documentos.
+5. La System API actualiza el estado a `indexed` (o `error` con el detalle). El front hace polling de la lista de documentos.
 
 ### Flujo de pregunta
 
@@ -90,15 +90,15 @@ flowchart LR
 
 ### MongoDB
 
-**`documentos`**: `id` (uuid), `titulo`, `nombreOriginal`, `blobName`, `namespace`, `tamanoBytes`, `hash` (SHA-256), `version`, `estado` (`pendiente` | `indexando` | `indexado` | `error` | `borrado`), `errorDetalle`, `cantidadChunks`, `creadoEn`, `actualizadoEn`, `indexadoEn`.
+**`documents`**: `id` (uuid), `title`, `originalFileName`, `blobName`, `namespace`, `sizeBytes`, `hash` (SHA-256), `version`, `status` (`pending` | `indexing` | `indexed` | `error` | `deleted`), `errorDetail`, `chunkCount`, `createdAt`, `updatedAt`, `indexedAt`.
 
-**`conversaciones`**: `id` (uuid), `usuarioId`, `titulo`, `namespace`, `creadoEn`.
+**`conversations`**: `id` (uuid), `userId`, `title`, `namespace`, `createdAt`.
 
-**`mensajes`** (colección aparte, índice por `conversacionId` + fecha): `id` (uuid), `conversacionId`, `rol` (`usuario` | `asistente`), `contenido`, `fecha`. Solo en respuestas del asistente: `fuentes` (lista de `{documentoId, chunkId, pagina, distancia}`), `modelo`, `tokensEntrada`, `tokensSalida`.
+**`messages`** (colección aparte, índice por `conversationId` + `createdAt`): `id` (uuid), `conversationId`, `role` (`user` | `assistant`), `content`, `createdAt`. Solo en respuestas del asistente: `sources` (lista de `{documentId, chunkId, page, distance}`), `model`, `inputTokens`, `outputTokens`.
 
 ### Chroma
 
-Un registro por chunk: `id`, vector, texto del chunk y metadata `{documentoId, pagina, orden, namespace, hashDoc}`. Los filtros por namespace usan esta metadata, por eso debe existir desde la ingesta.
+Un registro por chunk: `id`, vector, texto del chunk y metadata `{documentId, title, page, order, namespace, docHash}`. Los filtros por namespace usan esta metadata, por eso debe existir desde la ingesta.
 
 ## Contratos (propuesta, a refinar en las fases 2 y 4)
 
@@ -106,10 +106,14 @@ Un registro por chunk: `id`, vector, texto del chunk y metadata `{documentoId, p
 
 **System API:** subir, listar y borrar documentos; crear y listar conversaciones; enviar mensaje (con streaming SSE).
 
-Borrar un documento implica tres cosas: borrar el archivo en Azurite, borrar sus chunks en Chroma (vía el RAG service) y marcar el registro como `borrado`.
+Borrar un documento implica tres cosas: borrar el archivo en Azurite, borrar sus chunks en Chroma (vía el RAG service) y marcar el registro como `deleted`.
 
 ## Convenciones
 
+- **Identificadores en inglés de punta a punta:** código, contratos JSON/OpenAPI, campos y colecciones de Mongo, metadata de Chroma, valores de enums y logs. En español solo lo que lee el usuario final (textos de la UI, respuestas del LLM, mensajes de error mostrados).
+- **Casing:** cada lenguaje usa su convención (`snake_case` en Python, `PascalCase` en C#, `camelCase` en TypeScript) y el JSON va siempre en `camelCase`. La conversión se configura una sola vez por servicio (alias generator de Pydantic, serializador de ASP.NET), nunca campo por campo.
+- **Tests:** `pytest` en el RAG service. Unitarios para funciones puras (chunking, prompt, IDs) e integración (`@pytest.mark.integration`) contra Chroma y Ollama reales, que se saltean si no están disponibles. Sin mocks del LLM: la calidad se mide con el set de evaluación (Fase 3).
+- **Python:** dependencias y venv con `uv` (`pyproject.toml` + `uv.lock` versionado).
 - Los contratos entre servicios se definen con OpenAPI. Clientes generados con NSwag (TypeScript para Angular, C# hacia el RAG service; Kiota es alternativa).
 - IDs estables (uuid) en todos los documentos, mensajes y chunks. Las referencias entre colecciones y sistemas son por id.
 - Dentro de la red de Compose, los servicios se llaman por nombre (`http://rag-service:8000`, `http://chroma:8000`, `azurite:10000`). Fuera de Docker, `localhost`.
@@ -144,7 +148,6 @@ Borrar un documento implica tres cosas: borrar el archivo en Azurite, borrar sus
 - **Documentos de prueba:** markdown y PDF. Se define en la Fase 3 (formato, idioma, cantidad).
 - **Modelos concretos** (LLM y embeddings): se eligen en las fases 0 y 1, verificando la disponibilidad y la dimensión del modelo de embeddings en Ollama.
 - **Versiones de herramientas:** se verifican en la Fase 0.
-- **Idioma de los identificadores en el código** y estrategia de tests: se acuerdan al empezar la Fase 2 y se ajustan en cada fase.
 
 ## Fuera de alcance por ahora
 

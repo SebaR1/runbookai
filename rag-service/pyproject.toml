@@ -1,0 +1,27 @@
+[project]
+name = "rag-service"
+version = "0.1.0"
+description = "RAG service: ingest, retrieval and generation (FastAPI + Chroma + OpenAI-compatible LLM)"
+requires-python = ">=3.13"
+dependencies = [
+    "chromadb-client==1.5.9",
+    "fastapi>=0.165.0",
+    "openai>=3.58.0",
+    "pydantic-settings>=2.16.3",
+    "python-multipart>=0.0.34",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.2.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+markers = ["integration: requires Chroma and Ollama running"]
