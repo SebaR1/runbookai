@@ -38,7 +38,7 @@ Pone un tope a la VM de WSL2, que es donde corre Docker, para dejar RAM libre a 
 **Variables de entorno de usuario**
 
 - `OLLAMA_MODELS=C:\ollama\models`. Tiene que estar definida *antes* de que arranque Ollama. Si no, los modelos se guardan en `%USERPROFILE%\.ollama\models`.
-- `OLLAMA_HOST`: por ahora queda sin definir, así que Ollama escucha en `127.0.0.1:11434`. En la Fase 1 se prueba el acceso desde los contenedores por `host.docker.internal`.
+- `OLLAMA_HOST`: **sin definir a propósito**, así que Ollama escucha solo en `127.0.0.1:11434`. En la Fase 1 se verificó que Docker Desktop reenvía `host.docker.internal` al loopback del host, y los contenedores llegan igual. No hace falta exponer Ollama a la red ni abrir el firewall.
 
 ## Ollama y GPU
 
@@ -61,7 +61,31 @@ Notas:
 
 - Qwen3 tiene modo de razonamiento ("thinking"). Para RAG conviene apagarlo (`--think=false` en la CLI, `think: false` en la API nativa) o controlarlo desde el prompt. Se define en la Fase 2.
 - El contexto por defecto lo calcula Ollama según la VRAM (4096). Para RAG con varios chunks e historial puede hacer falta subirlo, cuidando que el modelo siga 100% en GPU.
-- Modelo de embeddings: pendiente para la Fase 1.
+
+## Modelo de embeddings (Fase 1)
+
+**`bge-m3`** (1,2 GB en disco), multilingüe.
+
+| Dato | Valor (medido por `/v1/embeddings`) |
+|---|---|
+| Dimensión | **1024** |
+| Normalización | vectores unitarios (norma 1.0), así que conviene usar distancia coseno en Chroma |
+| Coseno entre la misma pregunta en ES y en EN | 0.924 |
+
+Con `qwen3:8b` y `bge-m3` cargados a la vez quedan los dos **100% en GPU** (5,6 GB + 0,7 GB).
+
+## Infraestructura (Docker Compose, Fase 1)
+
+| Servicio | Imagen | Host → contenedor | Healthcheck |
+|---|---|---|---|
+| mongo | `mongo:8.0.38` | `127.0.0.1:27017` | `mongosh` + `ping` |
+| azurite | `mcr.microsoft.com/azure-storage/azurite:3.38.0` | `127.0.0.1:10000-10002` | `nc -z` al puerto Blob |
+| chroma | `chromadb/chroma:1.5.9` | `127.0.0.1:8001` → 8000 | GET `/api/v2/heartbeat` por `/dev/tcp` (la imagen no trae curl) |
+
+- Los puertos se publican solo en `127.0.0.1`, así que Mongo y compañía no quedan accesibles desde la red local.
+- Mongo usa usuario y contraseña tomados de `.env`. Sin credenciales, los comandos fallan con `requires authentication`.
+- Las versiones están fijas. Chroma en particular cambia de API entre versiones (hoy es la v2).
+- Para borrar todos los datos locales: `docker compose down -v`.
 
 ## Comandos de verificación
 
@@ -69,4 +93,6 @@ Notas:
 ollama ps                      # debe decir 100% GPU
 docker run --rm hello-world
 docker info --format 'CPUs={{.NCPU}} Mem={{.MemTotal}}'
+docker compose ps              # los tres servicios deben estar healthy
+docker run --rm curlimages/curl -s http://host.docker.internal:11434/v1/models
 ```

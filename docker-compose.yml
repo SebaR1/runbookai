@@ -1,0 +1,74 @@
+name: runbookai
+
+# Infraestructura base (Fase 1). Las apps (front, system-api, rag-service)
+# se agregan en sus fases. Ollama corre en el host Windows, no acá.
+#
+# Los puertos se publican solo en 127.0.0.1: accesibles desde la máquina,
+# no desde la red local.
+
+services:
+  mongo:
+    image: mongo:8.0.38
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:?definir en .env}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?definir en .env}
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:3.38.0
+    restart: unless-stopped
+    # --loose: tolera headers que Azurite no implementa.
+    # --skipApiVersionCheck: evita fallos cuando el SDK es más nuevo que el emulador.
+    command: >
+      azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0
+      --location /data --loose --skipApiVersionCheck
+    ports:
+      - "127.0.0.1:10000:10000" # Blob
+      - "127.0.0.1:10001:10001" # Queue (para la ingesta asíncrona, Fase 8)
+      - "127.0.0.1:10002:10002" # Table
+    volumes:
+      - azurite-data:/data
+    healthcheck:
+      test: ["CMD", "nc", "-z", "127.0.0.1", "10000"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  chroma:
+    image: chromadb/chroma:1.5.9
+    restart: unless-stopped
+    environment:
+      ANONYMIZED_TELEMETRY: "False"
+    ports:
+      - "127.0.0.1:8001:8000" # 8001 en el host para no chocar con el rag-service (8000)
+    volumes:
+      - chroma-data:/data
+    healthcheck:
+      # La imagen no trae curl: se hace el GET con /dev/tcp de bash.
+      test:
+        - CMD
+        - bash
+        - -c
+        - >-
+          exec 3<>/dev/tcp/127.0.0.1/8000 &&
+          printf 'GET /api/v2/heartbeat HTTP/1.0\r\nHost: localhost\r\n\r\n' >&3 &&
+          grep -q ' 200 ' <&3
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  mongo-data:
+  azurite-data:
+  chroma-data:
