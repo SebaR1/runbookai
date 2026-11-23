@@ -1,0 +1,1017 @@
+{
+  "tag": "baseline",
+  "createdAt": "2026-11-23T18:53:36",
+  "config": {
+    "chunk_strategy": "paragraph",
+    "chunk_size": 1000,
+    "chunk_overlap": 150,
+    "top_k": 5,
+    "prompt_version": "v1",
+    "max_distance": null,
+    "llm_temperature": 0.0,
+    "llm_model": "qwen3:8b",
+    "embedding_model": "bge-m3"
+  },
+  "metrics": {
+    "retrievalHit": 1,
+    "mrr": 0.8125,
+    "factCoverage": 1.0,
+    "answerAccuracy": 1,
+    "citationRate": 1,
+    "abstentionAccuracy": 1,
+    "falseAbstention": 0,
+    "avgLatencyMs": 1826.3684210526317,
+    "avgInputTokens": 1181.0526315789473,
+    "abstentionExact": 0.0
+  },
+  "questions": [
+    {
+      "id": "q01",
+      "type": "fact",
+      "question": "¿A partir de qué latencia se dispara la alerta de latencia alta de payments-api?",
+      "answer": "La alerta de latencia alta se dispara cuando el p95 supera los 800 ms durante 5 minutos seguidos [2].",
+      "abstained": false,
+      "evidenceRank": 2,
+      "expectedDocRetrieved": true,
+      "factsFound": 1,
+      "factsTotal": 1,
+      "cited": true,
+      "latencyMs": 1008,
+      "inputTokens": 1255,
+      "outputTokens": 34,
+      "sources": [
+        {
+          "index": 1,
+          "title": "runbook-pagos",
+          "page": 1,
+          "section": "",
+          "distance": 0.3275
+        },
+        {
+          "index": 2,
+          "title": "runbook-pagos",
+          "page": 1,
+          "section": "",
+          "distance": 0.3924
+        },
+        {
+          "index": 3,
+          "title": "runbook-red-y-certificados",
+          "page": 1,
+          "section": "",
+          "distance": 0.4279
+        },
+        {
+          "index": 4,
+          "title": "runbook-pagos",
+          "page": 1,
+          "section": "",
+          "distance": 0.4414
+        },
+        {
+          "index": 5,
+          "title": "runbook-pagos",
+          "page": 1,
+          "section": "",
+          "distance": 0.4584
+        }
+      ]
+    },
+    {
+      "id": "q02",
+      "type": "fact",
+      "question": "¿Cuánto duran los tokens de acceso que emite auth-api?",
+      "answer": "Los tokens de acceso emitidos por `auth-api` duran 15 minutos [1].",
+      "abstained": false,
+      "evidenceRank": 1,
+      "expectedDocRetrieved": true,
+      "factsFound": 1,
+      "factsTotal": 1,
+      "cited": true,
+      "latencyMs": 1443,
+      "inputTokens": 1230,
+      "outputTokens": 21,
+      "sources": [
+        {
+          "index": 1,
+          "title": "runbook-autenticacion",
+          "page": 1,
+          "section": "",
+          "distance": 0.2898
+        },
+        {
+          "index": 2,
+          "title": "manual-acceso-produccion",
+          "page": 3,
+          "section": "",
+          "distance": 0.448
+        },
+        {
+          "index": 3,
+          "title": "runbook-pagos",
+          "page": 1,
+          "section": "",
+          "distance": 0.4563
+        },
+        {
+          "index": 4,
+          "title": "runbook-cache-redis",
+          "page": 1,
+          "section": "",
+          "distance": 0.4758
+        },
+        {
+          "index": 5,
+          "title": "runbook-autenticacion",
+          "page": 1,
+          "section": "",
+          "distance": 0.4854
+        }
+      ]
+    },
+    {
+      "id": "q03",
+      "type": "fact",
+      "question": "¿Cuántos días se retienen los backups automáticos de orders-db?",
+      "answer": "Los backups automáticos de `orders-db` se retienen 35 días [1].",
+      "abstained": false,
+      "evidenceRank": 1,
+      "expectedDocRetrieved": true,
+      "factsFound": 1,
+      "factsTotal": 1,
+      "cited": true,
+      "latencyMs": 612,
+      "inputTokens": 1144,
+      "outputTokens": 20,
+      "sources": [
+        {
+          "index": 1,
+          "title": "runbook-base-de-datos",
+          "page": 1,
+          "section": "",
+          "distance": 0.3364
+        },
+        {
+          "index": 2,
+          "title": "runbook-base-de-datos",
+          "page": 1,
+          "section": "",
+          "distance": 0.4337
+        },
+        {
+          "index": 3,
+          "title": "runbook-base-de-datos",
+          "page": 1,
+          "section": "",
+          "distance": 0.4535
+        },
+        {
+          "index": 4,
+          "title": "runbook-cache-redis",
+          "page": 1,
+          "section": "",
+          "distance": 0.4544
+        },
+        {
+          "index": 5,
+          "title": "runbook-base-de-datos",
+          "page": 1,
+          "section": "",
+          "distance": 0.4587
+        }
+      ]
+    },
+    {
+      "id": "q04",
+      "type": "fact",
+      "question": "¿Cuándo hay congelamiento de despliegues durante la semana?",
+      "answer": "Hay congelamiento de despliegues los viernes después de las 15:00 y durante todo el fin de semana. Solo se permiten hotfixes con aprobación del líder técnico [1].",
+      "abstained": false,
+      "evidenceRank": 1,
+      "expectedDocRetrieved": true,
+      "factsFound": 2,
+      "factsTotal": 2,
+      "cited": true,
+      "latencyMs": 1215,
+      "inputTokens": 1256,
+      "outputTokens": 47,
+      "sources": [
+        {
+          "index": 1,
+          "title": "guia-despliegues",
+          "page": 1,
+          "section": "",
+          "distance": 0.3562
+        },
+        {
+          "index": 2,
+          "title": "guia-despliegues",
+          "page": 1,
+          "section": "",
+          "distance": 0.4214
+        },
+        {
+          "index": 3,
+          "title": "politica-guardias",
+          "page": 1,
+          "section": "",
+          "distance": 0.4938
+        },
+        {
+          "index": 4,
+          "title": "runbook-pagos",
+          "page": 1,
+          "section": "",
+          "distance": 0.5357
+        },
+        {
+          "index": 5,
+          "title": "runbook-pagos",
+          "page": 1,
+          "section": "",
+          "distance": 0.5397
+        }
+      ]
+    },
+    {
+      "id": "q05",
+      "type": "fact",
+      "question": "¿Con cuántos días de anticipación avisa la alerta de vencimiento de certificados?",
+      "answer": "La alerta de vencimiento de certificados se dispara cuando quedan menos de 21 días para que vaya a caducar [1].",
+      "abstained": false,
+      "evidenceRank": 1,
+      "expectedDocRetrieved": true,
+      "factsFound": 1,
+      "factsTotal": 1,
+      "cited": true,
+      "latencyMs": 937,
+      "inputTokens": 1233,
+      "outputTokens": 34,
+      "sources": [
+        {
+          "index": 1,
+          "title": "runbook-red-y-certificados",
+          "page": 1,
+          "section": "",
+          "distance": 0.455
+        },
+        {
+          "index": 2,
+          "title": "runbook-autenticacion",
+          "page": 1,
+          "section": "",
+          "distance": 0.4814
+        },
+        {
+          "index": 3,
+          "title": "politica-guardias",
+          "page": 2,
+          "section": "",
+          "distance": 0.4858
+        },
+        {
+          "index": 4,
+          "title": "runbook-pagos",
+          "page": 1,
+          "section": "",
+          "distance": 0.4896
+        },
+        {
+          "index": 5,
+          "title": "runbook-pagos",
+          "page": 1,
+          "section": "",
+          "distance": 0.5003
+        }
+      ]
+    },
+    {
+      "id": "q06",
+      "type": "fact",
+      "question": "¿Cuál es la duración máxima de una activación de rol en PIM?",
+      "answer": "La duración máxima de una activación de rol en PIM es de 4 horas [2].",
+      "abstained": false,
+      "evidenceRank": 2,
+      "expectedDocRetrieved": true,
+      "factsFound": 1,
+      "factsTotal": 1,
+      "cited": true,
+      "latencyMs": 651,
+      "inputTokens": 774,
+      "outputTokens": 22,
+      "sources": [
+        {
+          "index": 1,
+          "title": "manual-acceso-produccion",
+          "page": 5,
+          "section": "",
+          "distance": 0.3698
+        },
+        {
+          "index": 2,
+          "title": "manual-acceso-produccion",
+          "page": 3,
+          "section": "",
+          "distance": 0.462
+        },
+        {
+          "index": 3,
+          "title": "manual-acceso-produccion",
+          "page": 1,
+          "section": "",
+          "distance": 0.5161
+        },
+        {
+          "index": 4,
+          "title": "politica-guardias",
+          "page": 1,
+          "section": "",
+          "distance": 0.5256
+        },
+        {
+          "index": 5,
+          "title": "runbook-cache-redis",
+          "page": 1,
+          "section": "",
+          "distance": 0.5277
+        }
+      ]
+    },
+    {
+      "id": "q07",
+      "type": "procedure",
+      "question": "¿Cómo hago un reinicio controlado de payments-api?",
+      "answer": "Para realizar un reinicio controlado de `payments-api`, sigue estos pasos:\n\n1. Confirmar el contexto del clúster: `kubectl config current-context` debe mostrar `aks-prod-eastus2` [2].\n2. Verificar el estado de los pods: `kubectl get pods -n payments -l app=payments-api` [2].\n3. Avisar en `#checkout-oncall` que se va a reiniciar el servicio [2].\n4. Ejecutar el reinicio progresivo: `kubectl rollout restart deployment/payments-api -n payments` [2].\n5. Seguir el avance con `kubectl rollout status deployment/payments-api -n payments --timeout=5m` [2].\n6. Verificar en el dashboard de Grafana \"Payments Overview\" que el p95 baje de 800 ms en los 10 minutos siguientes [2].",
+      "abstained": false,
+      "evidenceRank": 2,
+      "expectedDocRetrieved": true,
+      "factsFound": 2,
+      "factsTotal": 2,
+      "cited": true,
+      "latencyMs": 5172,
+      "inputTokens": 1181,
+      "outputTokens": 190,
+      "sources": [
+        {
+          "index": 1,
+          "title": "runbook-pagos",
+          "page": 1,
+          "section": "",
+          "distance": 0.3957
+        },
+        {
+          "index": 2,
+          "title": "runbook-pagos",
+          "page": 1,
+          "section": "",
+          "distance": 0.4053
+        },
+        {
+          "index": 3,
+          "title": "runbook-pagos",
+          "page": 1,
+          "section": "",
+          "distance": 0.4438
+        },
+        {
+          "index": 4,
+          "title": "runbook-cache-redis",
+          "page": 1,
+          "section": "",
+          "distance": 0.4473
+        },
+        {
+          "index": 5,
+          "title": "runbook-pagos",
+          "page": 1,
+          "section": "",
+          "distance": 0.461
+        }
+      ]
+    },
+    {
+      "id": "q08",
+      "type": "procedure",
+      "question": "¿Cómo restauro orders-db a un punto en el tiempo?",
+      "answer": "Para restaurar `orders-db` a un punto en el tiempo, sigue estos pasos:\n\n1. Identifica la hora exacta anterior al problema (en UTC) [1].\n2. Crea un servidor nuevo restaurado a ese momento usando el comando:  \n   `az postgres flexible-server restore --resource-group rg-data-prod --name orders-db-restore --source-server orders-db --restore-time \"<hora UTC>\"` [1].\n3. Valida los datos en el servidor restaurado antes de tocar producción [1].\n4. Copia solo las tablas afectadas al servidor de producción. Nunca reemplaces el servidor de producción completo sin aprobación del líder de datos [1].\n\nLa restauración no afecta el servidor original, ya que siempre se crea uno nuevo [1].",
+      "abstained": false,
+      "evidenceRank": 1,
+      "expectedDocRetrieved": true,
+      "factsFound": 2,
+      "factsTotal": 2,
+      "cited": true,
+      "latencyMs": 3865,
+      "inputTokens": 1232,
+      "outputTokens": 166,
+      "sources": [
+        {
+          "index": 1,
+          "title": "runbook-base-de-datos",
+          "page": 1,
+          "section": "",
+          "distance": 0.3818
+        },
+        {
+          "index": 2,
+          "title": "runbook-base-de-datos",
+          "page": 1,
+          "section": "",
+          "distance": 0.4368
+        },
+        {
+          "index": 3,
+          "title": "runbook-base-de-datos",
+          "page": 1,
+          "section": "",
+          "distance": 0.5127
+        },
+        {
+          "index": 4,
+          "title": "runbook-base-de-datos",
+          "page": 1,
+          "section": "",
+          "distance": 0.5196
+        },
+        {
+          "index": 5,
+          "title": "runbook-pagos",
+          "page": 1,
+          "section": "",
+          "distance": 0.5224
+        }
+      ]
+    },
+    {
+      "id": "q09",
+      "type": "procedure",
+      "question": "¿Cuáles son los pasos para rotar la clave de firma JWT?",
+      "answer": "Para rotar la clave de firma JWT, sigue estos pasos:\n\n1. Generar una nueva versión del secreto `jwt-signing-key` en el Key Vault `kv-identity-prod` [1].\n2. Esperar 10 minutos: `auth-api` recarga la clave automáticamente y durante ese tiempo acepta tokens firmados con las dos versiones [1].\n3. Deshabilitar la versión anterior del secreto recién después de 24 horas, para no invalidar tokens en uso [1].",
+      "abstained": false,
+      "evidenceRank": 1,
+      "expectedDocRetrieved": true,
+      "factsFound": 3,
+      "factsTotal": 3,
+      "cited": true,
+      "latencyMs": 2665,
+      "inputTokens": 1342,
+      "outputTokens": 111,
+      "sources": [
+        {
+          "index": 1,
+          "title": "runbook-autenticacion",
+          "page": 1,
+          "section": "",
+          "distance": 0.306
+        },
+        {
+          "index": 2,
+          "title": "runbook-autenticacion",
+          "page": 1,
+          "section": "",
+          "distance": 0.4751
+        },
+        {
+          "index": 3,
+          "title": "runbook-cache-redis",
+          "page": 1,
+          "section": "",
+          "distance": 0.512
+        },
+        {
+          "index": 4,
+          "title": "runbook-autenticacion",
+          "page": 1,
+          "section": "",
+          "distance": 0.5253
+        },
+        {
+          "index": 5,
+          "title": "runbook-red-y-certificados",
+          "page": 1,
+          "section": "",
+          "distance": 0.5349
+        }
+      ]
+    },
+    {
+      "id": "q10",
+      "type": "procedure",
+      "question": "¿Cómo hago un rollback manual de un despliegue con Helm?",
+      "answer": "Para realizar un rollback manual de un despliegue con Helm, sigue estos pasos:\n\n1. Ver el historial de despliegues: `helm history <release> -n <namespace>`.\n2. Volver a la revisión anterior: `helm rollback <release> <revisión> -n <namespace>`.\n3. Avisar en `#deploys` con el motivo del rollback [1].\n\nEste proceso revierte el despliegue, pero no afecta las migraciones de base de datos, que deben ser compatibles hacia atrás [1].",
+      "abstained": false,
+      "evidenceRank": 1,
+      "expectedDocRetrieved": true,
+      "factsFound": 2,
+      "factsTotal": 2,
+      "cited": true,
+      "latencyMs": 3777,
+      "inputTokens": 1279,
+      "outputTokens": 121,
+      "sources": [
+        {
+          "index": 1,
+          "title": "guia-despliegues",
+          "page": 1,
+          "section": "",
+          "distance": 0.3409
+        },
+        {
+          "index": 2,
+          "title": "guia-despliegues",
+          "page": 1,
+          "section": "",
+          "distance": 0.4123
+        },
+        {
+          "index": 3,
+          "title": "runbook-cache-redis",
+          "page": 1,
+          "section": "",
+          "distance": 0.4931
+        },
+        {
+          "index": 4,
+          "title": "runbook-base-de-datos",
+          "page": 1,
+          "section": "",
+          "distance": 0.502
+        },
+        {
+          "index": 5,
+          "title": "runbook-base-de-datos",
+          "page": 1,
+          "section": "",
+          "distance": 0.5089
+        }
+      ]
+    },
+    {
+      "id": "q11",
+      "type": "ambiguous",
+      "question": "¿Cuál es el umbral de latencia de login?",
+      "answer": "El umbral de latencia de login es cuando el p95 de la ruta `/login` supera los 500 ms durante 5 minutos [2].",
+      "abstained": false,
+      "evidenceRank": 2,
+      "expectedDocRetrieved": true,
+      "factsFound": 1,
+      "factsTotal": 1,
+      "cited": true,
+      "latencyMs": 979,
+      "inputTokens": 1113,
+      "outputTokens": 36,
+      "sources": [
+        {
+          "index": 1,
+          "title": "runbook-pagos",
+          "page": 1,
+          "section": "",
+          "distance": 0.4506
+        },
+        {
+          "index": 2,
+          "title": "runbook-autenticacion",
+          "page": 1,
+          "section": "",
+          "distance": 0.4513
+        },
+        {
+          "index": 3,
+          "title": "runbook-red-y-certificados",
+          "page": 1,
+          "section": "",
+          "distance": 0.4532
+        },
+        {
+          "index": 4,
+          "title": "runbook-red-y-certificados",
+          "page": 1,
+          "section": "",
+          "distance": 0.4584
+        },
+        {
+          "index": 5,
+          "title": "manual-acceso-produccion",
+          "page": 3,
+          "section": "",
+          "distance": 0.4648
+        }
+      ]
+    },
+    {
+      "id": "q12",
+      "type": "ambiguous",
+      "question": "¿A quién escalo si un incidente de pagos dura más de media hora?",
+      "answer": "Si un incidente de pagos dura más de media hora, debes escalar al líder técnico de Checkout [1].",
+      "abstained": false,
+      "evidenceRank": 1,
+      "expectedDocRetrieved": true,
+      "factsFound": 1,
+      "factsTotal": 1,
+      "cited": true,
+      "latencyMs": 767,
+      "inputTokens": 1091,
+      "outputTokens": 27,
+      "sources": [
+        {
+          "index": 1,
+          "title": "runbook-pagos",
+          "page": 1,
+          "section": "",
+          "distance": 0.3465
+        },
+        {
+          "index": 2,
+          "title": "politica-guardias",
+          "page": 2,
+          "section": "",
+          "distance": 0.3751
+        },
+        {
+          "index": 3,
+          "title": "runbook-pagos",
+          "page": 1,
+          "section": "",
+          "distance": 0.403
+        },
+        {
+          "index": 4,
+          "title": "runbook-pagos",
+          "page": 1,
+          "section": "",
+          "distance": 0.4144
+        },
+        {
+          "index": 5,
+          "title": "runbook-pagos",
+          "page": 1,
+          "section": "",
+          "distance": 0.4395
+        }
+      ]
+    },
+    {
+      "id": "q13",
+      "type": "ambiguous",
+      "question": "¿Cuál es el comando para reiniciar el servicio de autenticación?",
+      "answer": "El comando para reiniciar el servicio de autenticación es:  \n`kubectl rollout restart deployment/auth-api -n identity` [1].",
+      "abstained": false,
+      "evidenceRank": 2,
+      "expectedDocRetrieved": true,
+      "factsFound": 1,
+      "factsTotal": 1,
+      "cited": true,
+      "latencyMs": 1618,
+      "inputTokens": 1267,
+      "outputTokens": 29,
+      "sources": [
+        {
+          "index": 1,
+          "title": "runbook-autenticacion",
+          "page": 1,
+          "section": "",
+          "distance": 0.4033
+        },
+        {
+          "index": 2,
+          "title": "runbook-autenticacion",
+          "page": 1,
+          "section": "",
+          "distance": 0.4158
+        },
+        {
+          "index": 3,
+          "title": "runbook-autenticacion",
+          "page": 1,
+          "section": "",
+          "distance": 0.4593
+        },
+        {
+          "index": 4,
+          "title": "manual-acceso-produccion",
+          "page": 3,
+          "section": "",
+          "distance": 0.4805
+        },
+        {
+          "index": 5,
+          "title": "runbook-cache-redis",
+          "page": 1,
+          "section": "",
+          "distance": 0.492
+        }
+      ]
+    },
+    {
+      "id": "q14",
+      "type": "crosslingual",
+      "question": "¿Cuál es la política de desalojo (eviction) del caché de Redis?",
+      "answer": "La política de desalojo (eviction) del caché de Redis es `allkeys-lru`: cuando el espacio en memoria se llena, se eliminan las claves menos recientemente utilizadas [1].",
+      "abstained": false,
+      "evidenceRank": 1,
+      "expectedDocRetrieved": true,
+      "factsFound": 1,
+      "factsTotal": 1,
+      "cited": true,
+      "latencyMs": 1240,
+      "inputTokens": 1252,
+      "outputTokens": 47,
+      "sources": [
+        {
+          "index": 1,
+          "title": "runbook-cache-redis",
+          "page": 1,
+          "section": "",
+          "distance": 0.4499
+        },
+        {
+          "index": 2,
+          "title": "runbook-cache-redis",
+          "page": 1,
+          "section": "",
+          "distance": 0.4535
+        },
+        {
+          "index": 3,
+          "title": "politica-guardias",
+          "page": 1,
+          "section": "",
+          "distance": 0.6432
+        },
+        {
+          "index": 4,
+          "title": "runbook-autenticacion",
+          "page": 1,
+          "section": "",
+          "distance": 0.6498
+        },
+        {
+          "index": 5,
+          "title": "guia-despliegues",
+          "page": 1,
+          "section": "",
+          "distance": 0.6601
+        }
+      ]
+    },
+    {
+      "id": "q15",
+      "type": "crosslingual",
+      "question": "How do I reboot the primary node of redis-cache?",
+      "answer": "Para reiniciar el nodo primario de `redis-cache`, sigue estos pasos:\n\n1. Anuncia en `#catalog-oncall` que se va a reiniciar el nodo primario [2].\n2. Ejecuta el comando:  \n   ```bash\n   az redis force-reboot --name redis-cache --resource-group rg-cache-prod --reboot-type PrimaryNode\n   ```\n3. Espera aproximadamente 10 minutos, durante los cuales puede haber un pico de falta de caché [2].",
+      "abstained": false,
+      "evidenceRank": 2,
+      "expectedDocRetrieved": true,
+      "factsFound": 2,
+      "factsTotal": 2,
+      "cited": true,
+      "latencyMs": 2587,
+      "inputTokens": 1352,
+      "outputTokens": 108,
+      "sources": [
+        {
+          "index": 1,
+          "title": "runbook-cache-redis",
+          "page": 1,
+          "section": "",
+          "distance": 0.3842
+        },
+        {
+          "index": 2,
+          "title": "runbook-cache-redis",
+          "page": 1,
+          "section": "",
+          "distance": 0.3855
+        },
+        {
+          "index": 3,
+          "title": "runbook-autenticacion",
+          "page": 1,
+          "section": "",
+          "distance": 0.5025
+        },
+        {
+          "index": 4,
+          "title": "runbook-base-de-datos",
+          "page": 1,
+          "section": "",
+          "distance": 0.5073
+        },
+        {
+          "index": 5,
+          "title": "runbook-pagos",
+          "page": 1,
+          "section": "",
+          "distance": 0.5077
+        }
+      ]
+    },
+    {
+      "id": "q16",
+      "type": "fact",
+      "question": "¿En cuánto tiempo hay que reconocer una alerta Sev1 estando de guardia?",
+      "answer": "Una alerta Sev1 debe ser reconocida en 15 minutos desde que PagerDuty la envía [1].",
+      "abstained": false,
+      "evidenceRank": 1,
+      "expectedDocRetrieved": true,
+      "factsFound": 1,
+      "factsTotal": 1,
+      "cited": true,
+      "latencyMs": 734,
+      "inputTokens": 654,
+      "outputTokens": 27,
+      "sources": [
+        {
+          "index": 1,
+          "title": "politica-guardias",
+          "page": 2,
+          "section": "",
+          "distance": 0.26
+        },
+        {
+          "index": 2,
+          "title": "runbook-pagos",
+          "page": 1,
+          "section": "",
+          "distance": 0.3942
+        },
+        {
+          "index": 3,
+          "title": "politica-guardias",
+          "page": 3,
+          "section": "",
+          "distance": 0.4574
+        },
+        {
+          "index": 4,
+          "title": "politica-guardias",
+          "page": 4,
+          "section": "",
+          "distance": 0.4734
+        },
+        {
+          "index": 5,
+          "title": "manual-acceso-produccion",
+          "page": 4,
+          "section": "",
+          "distance": 0.4769
+        }
+      ]
+    },
+    {
+      "id": "q17",
+      "type": "unanswerable",
+      "question": "¿Cuál es el presupuesto mensual de Azure del equipo Checkout?",
+      "answer": "El contexto proporcionado no incluye información sobre el presupuesto mensual de Azure del equipo Checkout [1][2][3][4][5]. Por lo tanto, no es posible responder a esta pregunta con los datos disponibles.",
+      "abstained": true,
+      "evidenceRank": null,
+      "expectedDocRetrieved": false,
+      "factsFound": 0,
+      "factsTotal": 0,
+      "cited": true,
+      "latencyMs": 1938,
+      "inputTokens": 1150,
+      "outputTokens": 47,
+      "sources": [
+        {
+          "index": 1,
+          "title": "runbook-pagos",
+          "page": 1,
+          "section": "",
+          "distance": 0.4601
+        },
+        {
+          "index": 2,
+          "title": "runbook-cache-redis",
+          "page": 1,
+          "section": "",
+          "distance": 0.4739
+        },
+        {
+          "index": 3,
+          "title": "runbook-pagos",
+          "page": 1,
+          "section": "",
+          "distance": 0.4879
+        },
+        {
+          "index": 4,
+          "title": "manual-acceso-produccion",
+          "page": 3,
+          "section": "",
+          "distance": 0.4894
+        },
+        {
+          "index": 5,
+          "title": "runbook-base-de-datos",
+          "page": 1,
+          "section": "",
+          "distance": 0.5186
+        }
+      ]
+    },
+    {
+      "id": "q18",
+      "type": "unanswerable",
+      "question": "¿Cómo reinicio el servicio de notificaciones push?",
+      "answer": "El contexto proporcionado no incluye información sobre cómo reiniciar el servicio de notificaciones push. Por lo tanto, no es posible responder a esta pregunta con la información disponible [1][2][3][4][5].",
+      "abstained": true,
+      "evidenceRank": null,
+      "expectedDocRetrieved": false,
+      "factsFound": 0,
+      "factsTotal": 0,
+      "cited": true,
+      "latencyMs": 2104,
+      "inputTokens": 1273,
+      "outputTokens": 46,
+      "sources": [
+        {
+          "index": 1,
+          "title": "guia-despliegues",
+          "page": 1,
+          "section": "",
+          "distance": 0.4729
+        },
+        {
+          "index": 2,
+          "title": "runbook-autenticacion",
+          "page": 1,
+          "section": "",
+          "distance": 0.4794
+        },
+        {
+          "index": 3,
+          "title": "runbook-pagos",
+          "page": 1,
+          "section": "",
+          "distance": 0.4799
+        },
+        {
+          "index": 4,
+          "title": "runbook-cache-redis",
+          "page": 1,
+          "section": "",
+          "distance": 0.4838
+        },
+        {
+          "index": 5,
+          "title": "runbook-pagos",
+          "page": 1,
+          "section": "",
+          "distance": 0.4867
+        }
+      ]
+    },
+    {
+      "id": "q19",
+      "type": "unanswerable",
+      "question": "¿Qué versión de Kubernetes usa el clúster aks-prod-eastus2?",
+      "answer": "El contexto proporcionado no incluye información sobre la versión específica de Kubernetes que utiliza el clúster `aks-prod-eastus2` [1][4]. Por lo tanto, no es posible determinar la versión de Kubernetes con base en la información disponible.",
+      "abstained": true,
+      "evidenceRank": null,
+      "expectedDocRetrieved": false,
+      "factsFound": 0,
+      "factsTotal": 0,
+      "cited": true,
+      "latencyMs": 1389,
+      "inputTokens": 1362,
+      "outputTokens": 54,
+      "sources": [
+        {
+          "index": 1,
+          "title": "runbook-pagos",
+          "page": 1,
+          "section": "",
+          "distance": 0.5373
+        },
+        {
+          "index": 2,
+          "title": "runbook-red-y-certificados",
+          "page": 1,
+          "section": "",
+          "distance": 0.5718
+        },
+        {
+          "index": 3,
+          "title": "runbook-cache-redis",
+          "page": 1,
+          "section": "",
+          "distance": 0.5834
+        },
+        {
+          "index": 4,
+          "title": "runbook-pagos",
+          "page": 1,
+          "section": "",
+          "distance": 0.5892
+        },
+        {
+          "index": 5,
+          "title": "runbook-autenticacion",
+          "page": 1,
+          "section": "",
+          "distance": 0.594
+        }
+      ]
+    }
+  ]
+}

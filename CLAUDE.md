@@ -145,7 +145,6 @@ Borrar un documento implica tres cosas: borrar el archivo en Azurite, borrar sus
 ## Pendientes por definir
 
 - **Nombre del proyecto:** "RunbookAI" es provisorio. Se cambia más adelante.
-- **Documentos de prueba:** markdown y PDF. Se define en la Fase 3 (formato, idioma, cantidad).
 - **Modelos concretos** (LLM y embeddings): se eligen en las fases 0 y 1, verificando la disponibilidad y la dimensión del modelo de embeddings en Ollama.
 - **Versiones de herramientas:** se verifican en la Fase 0.
 

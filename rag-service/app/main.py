@@ -1,4 +1,3 @@
-import hashlib
 import json
 import logging
 import sys
@@ -10,12 +9,13 @@ from typing import Annotated, Any
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import JSONResponse, StreamingResponse
 
-from app.chunking import chunk_id, split_markdown
+from app.extraction import UnsupportedDocument
 from app.llm import LLM
-from app.prompting import NO_CONTEXT_ANSWER, build_messages
-from app.schemas import AskRequest, AskResponse, HealthResponse, IngestResponse, Source
+from app.pipeline import EmptyDocument, ingest_document, messages_for, retrieve
+from app.prompting import NO_CONTEXT_ANSWER
+from app.schemas import AskRequest, AskResponse, HealthResponse, IngestResponse
 from app.settings import Settings, get_settings
-from app.store import ChunkRecord, Store
+from app.store import Store
 
 
 class JsonFormatter(logging.Formatter):
@@ -34,8 +34,6 @@ _handler.setFormatter(JsonFormatter())
 log.addHandler(_handler)
 log.setLevel(get_settings().log_level)
 log.propagate = False
-
-ALLOWED_EXTENSIONS = (".md", ".markdown", ".txt")
 
 app = FastAPI(
     title="RunbookAI RAG service",
@@ -83,99 +81,30 @@ def ingest(
     settings: SettingsDep,
     llm: LLMDep,
     store: StoreDep,
-    file: Annotated[UploadFile, File(description="Markdown file")],
+    file: Annotated[UploadFile, File(description="Markdown (.md, .txt) or PDF file")],
     document_id: Annotated[str, Form(alias="documentId")],
     namespace: Annotated[str, Form()] = "default",
     title: Annotated[str | None, Form()] = None,
 ) -> IngestResponse:
     filename = file.filename or "document.md"
-    if not filename.lower().endswith(ALLOWED_EXTENSIONS):
-        raise HTTPException(415, f"Unsupported file type: {filename}. Allowed: {ALLOWED_EXTENSIONS}")
-
-    raw = file.file.read()
     try:
-        text = raw.decode("utf-8-sig")
-    except UnicodeDecodeError:
-        raise HTTPException(422, "File must be UTF-8 text")
-
-    chunks = split_markdown(text, settings.chunk_size, settings.chunk_overlap)
-    if not chunks:
-        raise HTTPException(422, "Document has no text")
-
-    started = time.perf_counter()
-    doc_hash = hashlib.sha256(raw).hexdigest()
-    title = title or filename.rsplit(".", 1)[0]
-    vectors = llm.embed(chunks)
-    records = [
-        ChunkRecord(
-            id=chunk_id(document_id, order),
-            text=chunk,
-            embedding=vector,
-            metadata={
-                "documentId": document_id,
-                "title": title,
-                "page": 1,  # markdown has no pages; PDF support arrives in Phase 3
-                "order": order,
-                "namespace": namespace,
-                "docHash": doc_hash,
-            },
+        result = ingest_document(
+            settings, llm, store,
+            filename=filename, raw=file.file.read(),
+            document_id=document_id, namespace=namespace, title=title,
         )
-        for order, (chunk, vector) in enumerate(zip(chunks, vectors))
-    ]
-    store.replace_document(document_id, records)
-
-    log.info(
-        "ingest",
-        extra={"data": {
-            "documentId": document_id,
-            "namespace": namespace,
-            "title": title,
-            "chunkCount": len(records),
-            "elapsedMs": round((time.perf_counter() - started) * 1000),
-        }},
-    )
+    except UnsupportedDocument as exc:
+        raise HTTPException(415, str(exc))
+    except EmptyDocument as exc:
+        raise HTTPException(422, str(exc))
     return IngestResponse(
         document_id=document_id,
         namespace=namespace,
-        chunk_count=len(records),
-        doc_hash=doc_hash,
+        chunk_count=result.chunk_count,
+        doc_hash=result.doc_hash,
         collection=store.name,
         embedding_model=settings.embedding_model,
     )
-
-
-def _retrieve(request: AskRequest, settings: Settings, llm: LLM, store: Store) -> list[Source]:
-    started = time.perf_counter()
-    k = request.k or settings.top_k
-    [query_vector] = llm.embed([request.question])
-    hits = store.query(query_vector, request.namespace, k)
-    sources = [
-        Source(
-            index=i,
-            document_id=h.metadata.get("documentId", ""),
-            chunk_id=h.id,
-            title=h.metadata.get("title", ""),
-            page=h.metadata.get("page", 1),
-            order=h.metadata.get("order", 0),
-            distance=round(h.distance, 4),
-            text=h.text,
-        )
-        for i, h in enumerate(hits, start=1)
-    ]
-    log.info(
-        "retrieval",
-        extra={"data": {
-            "question": request.question,
-            "namespace": request.namespace,
-            "k": k,
-            "elapsedMs": round((time.perf_counter() - started) * 1000),
-            "chunks": [
-                {"chunkId": s.chunk_id, "documentId": s.document_id, "order": s.order, "distance": s.distance}
-                for s in sources
-            ],
-        }},
-    )
-    return sources
 
 
 def _sse(event: str, data: Any) -> str:
@@ -195,8 +124,8 @@ def ask(
     store: StoreDep,
     stream: Annotated[bool, Query(description="Stream the answer as Server-Sent Events")] = True,
 ):
-    sources = _retrieve(request, settings, llm, store)
-    messages = build_messages(request.question, sources, request.history, settings.history_max_messages)
+    sources = retrieve(settings, llm, store, request)
+    messages = messages_for(settings, request, sources)
 
     if not stream:
         started = time.perf_counter()

@@ -23,3 +23,6 @@ __pycache__/
 .idea/
 Thumbs.db
 .DS_Store
+
+# Resultados de evaluación (la línea base sí se versiona: rag-service/eval/baseline.json)
+rag-service/eval/results/

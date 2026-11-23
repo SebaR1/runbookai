@@ -43,3 +43,25 @@ def test_chunk_id_is_deterministic_uuid():
     assert a != chunk_id("doc-1", 1)
     assert a != chunk_id("doc-2", 0)
     assert len(a) == 36
+
+
+from app.chunking import build_chunks, split_by_headings  # noqa: E402
+from app.extraction import Page  # noqa: E402
+
+
+def test_heading_chunks_carry_the_section_path():
+    md = "# Runbook\n\nIntro.\n\n## Alertas\n\nUmbral 800 ms.\n\n### Detalle\n\nMás info.\n\n## Reinicio\n\nPaso 1."
+    sections = split_by_headings(md, size=1000, overlap=100)
+    assert [s for s, _ in sections] == ["Runbook", "Runbook > Alertas", "Runbook > Alertas > Detalle", "Runbook > Reinicio"]
+    assert sections[1][1] == "Runbook > Alertas\n\nUmbral 800 ms."
+
+
+def test_headings_inside_code_fences_are_ignored():
+    md = "## Real\n\n```bash\n# not a heading\necho hi\n```"
+    assert [s for s, _ in split_by_headings(md)] == ["Real"]
+
+
+def test_pdf_pages_keep_page_numbers_and_ignore_heading_strategy():
+    pages = [Page(1, "uno"), Page(2, "# no es heading en pdf\n\ndos")]
+    chunks = build_chunks(pages, "pdf", "heading", 1000, 100)
+    assert [(c.page, c.section) for c in chunks] == [(1, ""), (2, "")]

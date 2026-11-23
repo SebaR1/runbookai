@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -27,9 +28,14 @@ class Settings(BaseSettings):
 
     chroma_url: str = "http://localhost:8001"
 
+    # Defaults chosen with the Phase 3 evaluation (docs/evaluacion.md).
+    chunk_strategy: Literal["paragraph", "heading"] = "heading"
     chunk_size: int = 1000
     chunk_overlap: int = 150
     top_k: int = 5
+    # Chunks farther than this (cosine distance) are discarded before the LLM. None = keep all.
+    max_distance: float | None = None
+    prompt_version: Literal["v1", "v2"] = "v2"
     history_max_messages: int = 8
 
     log_level: str = "INFO"

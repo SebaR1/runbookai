@@ -14,7 +14,7 @@ from app.main import app, get_store
 
 pytestmark = pytest.mark.integration
 
-SAMPLE = Path(__file__).parent.parent / "samples" / "runbook-pagos.md"
+SAMPLE = Path(__file__).parent.parent / "eval" / "corpus" / "runbook-pagos.md"
 
 
 @pytest.fixture(scope="module")

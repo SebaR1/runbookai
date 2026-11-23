@@ -41,6 +41,7 @@ class Source(ApiModel):
     chunk_id: str
     title: str
     page: int
+    section: str = ""
     order: int
     distance: float
     text: str

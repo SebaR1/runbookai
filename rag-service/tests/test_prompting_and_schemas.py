@@ -1,4 +1,4 @@
-from app.prompting import SYSTEM_PROMPT, build_messages
+from app.prompting import SYSTEM_PROMPTS, build_messages
 from app.schemas import AskRequest, HistoryMessage, Source
 from app.store import collection_name
 
@@ -12,7 +12,7 @@ def test_messages_have_system_history_and_question_with_numbered_context():
     history = [HistoryMessage(role="user", content=f"q{i}") for i in range(10)]
     messages = build_messages("¿Cómo reinicio?", [_source(1, "paso A"), _source(2, "paso B")], history, 4)
 
-    assert messages[0] == {"role": "system", "content": SYSTEM_PROMPT}
+    assert messages[0] == {"role": "system", "content": SYSTEM_PROMPTS["v1"]}
     assert [m["content"] for m in messages[1:5]] == ["q6", "q7", "q8", "q9"]  # only the last N
     last = messages[-1]
     assert last["role"] == "user"
