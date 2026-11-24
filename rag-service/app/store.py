@@ -87,8 +87,13 @@ class Store:
             metadatas=[c.metadata for c in chunks],
         )
 
-    def delete_document(self, document_id: str) -> None:
-        self.collection.delete(where={"documentId": document_id})
+    def delete_document(self, document_id: str) -> int:
+        """Delete every chunk of the document. Returns how many there were (0 is fine)."""
+        where = {"documentId": document_id}
+        count = len(self.collection.get(where=where, include=[])["ids"])
+        if count:
+            self.collection.delete(where=where)
+        return count
 
     def query(self, embedding: list[float], namespace: str, k: int) -> list[QueryHit]:
         result = self.collection.query(

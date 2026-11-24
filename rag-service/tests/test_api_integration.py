@@ -87,3 +87,26 @@ def test_ask_stream_emits_sources_tokens_and_done(client, ingested):
 def test_other_namespace_sees_nothing(client, ingested):
     r = client.post("/ask?stream=false", json={"question": "reinicio de payments-api", "namespace": "does-not-exist"})
     assert r.json()["sources"] == []
+
+
+def test_delete_document_removes_its_chunks(client):
+    document_id = str(uuid.uuid4())
+    namespace = f"test-{uuid.uuid4().hex[:8]}"
+    with SAMPLE.open("rb") as f:
+        ingested = client.post(
+            "/ingest",
+            files={"file": (SAMPLE.name, f, "text/markdown")},
+            data={"documentId": document_id, "namespace": namespace},
+        ).json()
+
+    r = client.delete(f"/documents/{document_id}")
+    assert r.status_code == 200, r.text
+    assert r.json() == {"documentId": document_id, "deletedChunkCount": ingested["chunkCount"]}
+    assert get_store().collection.get(where={"documentId": document_id})["ids"] == []
+
+
+def test_delete_unknown_document_is_idempotent(client):
+    document_id = str(uuid.uuid4())
+    r = client.delete(f"/documents/{document_id}")
+    assert r.status_code == 200
+    assert r.json() == {"documentId": document_id, "deletedChunkCount": 0}

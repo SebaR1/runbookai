@@ -6,14 +6,15 @@ from collections.abc import Iterator
 from functools import lru_cache
 from typing import Annotated, Any
 
-from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, UploadFile
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Path, Query, UploadFile
 from fastapi.responses import JSONResponse, StreamingResponse
+from pydantic.alias_generators import to_camel
 
 from app.extraction import UnsupportedDocument
 from app.llm import LLM
 from app.pipeline import EmptyDocument, ingest_document, messages_for, retrieve
 from app.prompting import NO_CONTEXT_ANSWER
-from app.schemas import AskRequest, AskResponse, HealthResponse, IngestResponse
+from app.schemas import AskRequest, AskResponse, DeleteDocumentResponse, HealthResponse, IngestResponse
 from app.settings import Settings, get_settings
 from app.store import Store
 
@@ -39,6 +40,9 @@ app = FastAPI(
     title="RunbookAI RAG service",
     version="0.1.0",
     description="Ingest, retrieval and answer generation. Only component that talks to Chroma and the LLM.",
+    # operationId = function name in camelCase (ingest, ask, deleteDocument). Generated
+    # clients (NSwag) use it for method names; the FastAPI default is "ingest_ingest_post".
+    generate_unique_id_function=lambda route: to_camel(route.name),
 )
 
 
@@ -105,6 +109,21 @@ def ingest(
         collection=store.name,
         embedding_model=settings.embedding_model,
     )
+
+
+@app.delete("/documents/{documentId}", response_model=DeleteDocumentResponse)
+def delete_document(
+    store: StoreDep,
+    document_id: Annotated[str, Path(alias="documentId")],
+) -> DeleteDocumentResponse:
+    """Delete every chunk of a document. Idempotent: an unknown id returns deletedChunkCount=0.
+
+    The RAG service does not own the document registry (the System API does), so it
+    cannot tell "never existed" from "already deleted"; both mean "no chunks left".
+    """
+    deleted = store.delete_document(document_id)
+    log.info("delete", extra={"data": {"documentId": document_id, "deletedChunkCount": deleted}})
+    return DeleteDocumentResponse(document_id=document_id, deleted_chunk_count=deleted)
 
 
 def _sse(event: str, data: Any) -> str:

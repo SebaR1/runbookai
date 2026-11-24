@@ -23,6 +23,7 @@ The configuration comes from environment variables or from `rag-service/.env` (s
 |---|---|---|
 | GET | `/health` | Checks Chroma, the LLM and that both models are available. Returns 503 if anything is missing. |
 | POST | `/ingest` | Multipart: `file` (.md, .txt or .pdf), `documentId`, `namespace`, `title`. Idempotent: replaces the previous chunks of the document. |
+| DELETE | `/documents/{documentId}` | Deletes every chunk of the document. Idempotent: returns `deletedChunkCount` (0 if there was nothing). |
 | POST | `/ask` | JSON `{question, namespace, history, k}`. SSE by default (events `sources`, `token`, `done`, `error`); `?stream=false` returns JSON. |
 
 ## Examples (curl)
@@ -35,6 +36,16 @@ curl localhost:8000/ingest -F "file=@eval/corpus/runbook-pagos.md" \
 # console encoding, which breaks accents and "¿".
 curl -N localhost:8000/ask -H "Content-Type: application/json" --data-binary @ask.json
 ```
+
+## OpenAPI contract
+
+The System API generates its C# client from a versioned snapshot of this contract. After changing an endpoint or a schema:
+
+```bash
+uv run python -m scripts.export_openapi   # writes system-api/src/RunbookAI.SystemApi/Rag/rag-service.openapi.json
+```
+
+`tests/test_openapi_snapshot.py` fails if the snapshot is out of date.
 
 ## Inspect Chroma
 

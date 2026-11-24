@@ -23,6 +23,11 @@ class IngestResponse(ApiModel):
     embedding_model: str
 
 
+class DeleteDocumentResponse(ApiModel):
+    document_id: str
+    deleted_chunk_count: int
+
+
 class HistoryMessage(ApiModel):
     role: Literal["user", "assistant"]
     content: str

@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/RunbookAI.SystemApi/RunbookAI.SystemApi.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/RunbookAI.SystemApi.Tests/RunbookAI.SystemApi.Tests.csproj" />
+  </Folder>
+</Solution>

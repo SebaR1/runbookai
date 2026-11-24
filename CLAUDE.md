@@ -32,7 +32,7 @@ Se desarrolla 100% en local con Docker Desktop, y está pensado para poder lleva
 | Front | Angular (SPA estática, nginx en contenedor) | Subir documentos, ver su estado, chat con streaming y fuentes |
 | System API | ASP.NET Core (.NET LTS vigente) con OpenAPI | Dueña de los documentos originales, el registro de documentos y las conversaciones. Orquesta al RAG service |
 | RAG service | Python + FastAPI | Ingesta (chunking + embeddings), retrieval y generación. Único que habla con Chroma y con Ollama |
-| Base de datos | MongoDB | Colecciones `documentos`, `conversaciones`, `mensajes` |
+| Base de datos | MongoDB | Colecciones `documents`, `conversations`, `messages` |
 | Storage | Azurite (emulador de Azure Blob) | Archivos originales |
 | Base vectorial | Chroma (modo servidor, contenedor propio) | Chunks, vectores y metadata. Es un índice derivado |
 | Modelos | Ollama (en el host Windows) | LLM de chat y embeddings, con API compatible con OpenAI |
@@ -132,9 +132,9 @@ Borrar un documento implica tres cosas: borrar el archivo en Azurite, borrar sus
 
 **Fase 3: calidad del RAG.** Lectura de PDF, chunking por títulos, metadata completa, filtro por namespace, prompt con grounding (responder solo con el contexto o decir que no sabe). Set de evaluación de 15 a 20 preguntas con un script que lo corre. *Lista cuando:* hay una evaluación base guardada y se puede medir el efecto de cambiar tamaño de chunk, `k` y prompt.
 
-**Fase 4: System API, documentos.** ASP.NET Core con OpenAPI y MongoDB. Subir (a Azurite y al registro, con hash y estado), listar y borrar, llamando al RAG service. Cliente generado del contrato del RAG service. Agregar `DELETE /documents/{id}` al RAG service. *Lista cuando:* subes desde Swagger y el estado pasa a `indexado`, y borrar limpia Azurite, MongoDB y Chroma.
+**Fase 4: System API, documentos.** ASP.NET Core con OpenAPI y MongoDB. Subir (a Azurite y al registro, con hash y estado), listar y borrar, llamando al RAG service. Cliente generado del contrato del RAG service. Agregar `DELETE /documents/{id}` al RAG service. *Lista cuando:* subes desde Swagger y el estado pasa a `indexed`, y borrar limpia Azurite, MongoDB y Chroma.
 
-**Fase 5: conversaciones.** Colecciones `conversaciones` y `mensajes`, historial enviado al RAG service, fuentes guardadas por respuesta, streaming de punta a punta. *Lista cuando:* una pregunta de seguimiento se entiende en contexto y el streaming funciona con `curl`.
+**Fase 5: conversaciones.** Colecciones `conversations` y `messages`, historial enviado al RAG service, fuentes guardadas por respuesta, streaming de punta a punta. *Lista cuando:* una pregunta de seguimiento se entiende en contexto y el streaming funciona con `curl`.
 
 **Fase 6: front Angular.** Cliente generado con NSwag. Pantallas de documentos (subida y estado con polling) y de chat (streaming y fuentes). Nginx como proxy. *Lista cuando:* el flujo completo funciona desde el navegador.
 

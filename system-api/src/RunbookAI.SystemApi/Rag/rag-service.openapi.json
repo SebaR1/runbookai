@@ -1,0 +1,490 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "RunbookAI RAG service",
+    "description": "Ingest, retrieval and answer generation. Only component that talks to Chroma and the LLM.",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health",
+        "operationId": "health",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ingest": {
+      "post": {
+        "summary": "Ingest",
+        "operationId": "ingest",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_ingest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IngestResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/documents/{documentId}": {
+      "delete": {
+        "summary": "Delete Document",
+        "description": "Delete every chunk of a document. Idempotent: an unknown id returns deletedChunkCount=0.\n\nThe RAG service does not own the document registry (the System API does), so it\ncannot tell \"never existed\" from \"already deleted\"; both mean \"no chunks left\".",
+        "operationId": "deleteDocument",
+        "parameters": [
+          {
+            "name": "documentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Documentid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteDocumentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ask": {
+      "post": {
+        "summary": "Ask",
+        "operationId": "ask",
+        "parameters": [
+          {
+            "name": "stream",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Stream the answer as Server-Sent Events",
+              "default": true,
+              "title": "Stream"
+            },
+            "description": "Stream the answer as Server-Sent Events"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "SSE (default): events `sources`, `token`, `done`, `error`. JSON when stream=false.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AskResponse"
+                }
+              },
+              "text/event-stream": {}
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AskRequest": {
+        "properties": {
+          "question": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Question"
+          },
+          "namespace": {
+            "type": "string",
+            "title": "Namespace",
+            "default": "default"
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/HistoryMessage"
+            },
+            "type": "array",
+            "title": "History",
+            "default": []
+          },
+          "k": {
+            "type": "integer",
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "K",
+            "nullable": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "question"
+        ],
+        "title": "AskRequest"
+      },
+      "AskResponse": {
+        "properties": {
+          "answer": {
+            "type": "string",
+            "title": "Answer"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/Source"
+            },
+            "type": "array",
+            "title": "Sources"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "inputTokens": {
+            "type": "integer",
+            "title": "Inputtokens",
+            "nullable": true
+          },
+          "outputTokens": {
+            "type": "integer",
+            "title": "Outputtokens",
+            "nullable": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "answer",
+          "sources",
+          "model",
+          "inputTokens",
+          "outputTokens"
+        ],
+        "title": "AskResponse"
+      },
+      "Body_ingest": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "title": "File",
+            "description": "Markdown (.md, .txt) or PDF file",
+            "format": "binary"
+          },
+          "documentId": {
+            "type": "string",
+            "title": "Documentid"
+          },
+          "namespace": {
+            "type": "string",
+            "title": "Namespace",
+            "default": "default"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "nullable": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "file",
+          "documentId"
+        ],
+        "title": "Body_ingest"
+      },
+      "DeleteDocumentResponse": {
+        "properties": {
+          "documentId": {
+            "type": "string",
+            "title": "Documentid"
+          },
+          "deletedChunkCount": {
+            "type": "integer",
+            "title": "Deletedchunkcount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "documentId",
+          "deletedChunkCount"
+        ],
+        "title": "DeleteDocumentResponse"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "degraded"
+            ],
+            "title": "Status"
+          },
+          "chroma": {
+            "type": "boolean",
+            "title": "Chroma"
+          },
+          "llm": {
+            "type": "boolean",
+            "title": "Llm"
+          },
+          "missingModels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missingmodels"
+          },
+          "collection": {
+            "type": "string",
+            "title": "Collection"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "chroma",
+          "llm",
+          "missingModels",
+          "collection"
+        ],
+        "title": "HealthResponse"
+      },
+      "HistoryMessage": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant"
+            ],
+            "title": "Role"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          }
+        },
+        "type": "object",
+        "required": [
+          "role",
+          "content"
+        ],
+        "title": "HistoryMessage"
+      },
+      "IngestResponse": {
+        "properties": {
+          "documentId": {
+            "type": "string",
+            "title": "Documentid"
+          },
+          "namespace": {
+            "type": "string",
+            "title": "Namespace"
+          },
+          "chunkCount": {
+            "type": "integer",
+            "title": "Chunkcount"
+          },
+          "docHash": {
+            "type": "string",
+            "title": "Dochash"
+          },
+          "collection": {
+            "type": "string",
+            "title": "Collection"
+          },
+          "embeddingModel": {
+            "type": "string",
+            "title": "Embeddingmodel"
+          }
+        },
+        "type": "object",
+        "required": [
+          "documentId",
+          "namespace",
+          "chunkCount",
+          "docHash",
+          "collection",
+          "embeddingModel"
+        ],
+        "title": "IngestResponse"
+      },
+      "Source": {
+        "properties": {
+          "index": {
+            "type": "integer",
+            "title": "Index",
+            "description": "Number used to cite this source in the answer, e.g. [1]"
+          },
+          "documentId": {
+            "type": "string",
+            "title": "Documentid"
+          },
+          "chunkId": {
+            "type": "string",
+            "title": "Chunkid"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          },
+          "section": {
+            "type": "string",
+            "title": "Section",
+            "default": ""
+          },
+          "order": {
+            "type": "integer",
+            "title": "Order"
+          },
+          "distance": {
+            "type": "number",
+            "title": "Distance"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "index",
+          "documentId",
+          "chunkId",
+          "title",
+          "page",
+          "order",
+          "distance",
+          "text"
+        ],
+        "title": "Source"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}
