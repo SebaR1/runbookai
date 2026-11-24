@@ -62,5 +62,5 @@ La latencia tiene ruido de unos ±500 ms entre corridas (depende de si el modelo
 
 ## Otros datos
 
-- Con k=5 se usan ~900-1200 tokens de entrada, lejos del contexto de 4096 que Ollama usa por defecto en esta GPU. Cuando la Fase 5 agregue historial conviene subirlo con `OLLAMA_CONTEXT_LENGTH=8192`, porque Ollama recorta el prompt sin avisar si lo supera.
+- Con k=5 se usan ~900-1200 tokens de entrada. El contexto de Ollama se subió a 8192 (`OLLAMA_CONTEXT_LENGTH`) para dejar lugar al historial de la Fase 5. Repetir la evaluación con 8192 dio las mismas métricas y la misma latencia dentro del ruido (2005 ms contra 1994 ms).
 - PDF: `pypdf` extrae bien el texto por página, pero pierde los saltos de párrafo y los títulos, así que los PDF siempre usan el chunking por párrafos. Descartamos PyMuPDF por su licencia AGPL.

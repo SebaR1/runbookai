@@ -60,7 +60,9 @@ Modelo LLM de prueba: **`qwen3:8b`** (Q4, 5,2 GB en disco y 5,6 GB cargado con c
 Notas:
 
 - Qwen3 tiene modo de razonamiento ("thinking"). Para RAG conviene apagarlo (`--think=false` en la CLI, `think: false` en la API nativa) o controlarlo desde el prompt. Se define en la Fase 2.
-- El contexto por defecto lo calcula Ollama según la VRAM (4096). Para RAG con varios chunks e historial puede hacer falta subirlo, cuidando que el modelo siga 100% en GPU.
+- **Contexto: `OLLAMA_CONTEXT_LENGTH=8192`** (variable de usuario). Por defecto, Ollama elegía 4096 según la VRAM y, si el prompt lo supera, **lo recorta sin avisar**. Con 8192, `qwen3:8b` ocupa 6,2 GB y `bge-m3` 0,7 GB, y los dos quedan 100% en GPU (verificado con `ollama ps`, sin desalojos durante la evaluación completa).
+  - Si se carga `qwen3:8b` primero, Ollama puede estimar que no entra y desalojar `bge-m3` (`"evicting"` en `server.log`). Con el uso normal, que alterna embeddings y chat, conviven sin problema.
+  - Margen: quedan ~1 GB de VRAM libres. Un LLM más grande o más contexto ya no entraría completo en la GPU.
 
 ## Modelo de embeddings (Fase 1)
 
