@@ -54,6 +54,7 @@ builder.Services.AddHostedService<IndexingWorker>();
 builder.Services.ConfigureHttpJsonOptions(o =>
     o.SerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)));
 builder.Services.AddProblemDetails();
+builder.Services.AddHealthChecks();
 builder.Services.AddOpenApi(o => o.AddDocumentTransformer((document, _, _) =>
 {
     document.Info.Title = "RunbookAI System API";
@@ -75,6 +76,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapDocuments();
+app.MapHealthChecks("/health"); // liveness for the container healthcheck
 
 // Idempotent setup: indexes and blob container. Fails fast if Mongo or Azurite are down.
 await MongoSetup.EnsureIndexesAsync(app.Services.GetRequiredService<IMongoCollection<Document>>());

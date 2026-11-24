@@ -95,6 +95,16 @@ Con `qwen3:8b` y `bge-m3` cargados a la vez quedan los dos **100% en GPU** (5,6 
 ollama ps                      # debe decir 100% GPU
 docker run --rm hello-world
 docker info --format 'CPUs={{.NCPU}} Mem={{.MemTotal}}'
-docker compose ps              # los tres servicios deben estar healthy
+docker compose ps              # los cinco servicios deben estar healthy
 docker run --rm curlimages/curl -s http://host.docker.internal:11434/v1/models
 ```
+
+## Build de las imágenes (Compose v5 + Bake)
+
+Compose v5 construye las imágenes con Bake (buildx), que solo deja leer archivos dentro del directorio desde el que se ejecuta. Compara las rutas como texto, así que `c:\dev\RunbookAI` (con minúscula, como queda en Git Bash o en algunas terminales de VS Code) no coincide con `C:\dev\RunbookAI`, y el build falla con:
+
+```
+additional privileges requested: pass "--allow=fs.read=rag-service\Dockerfile" to grant requested privileges
+```
+
+Solución: ejecutar `docker compose up -d --build` desde una terminal ubicada en `C:\dev\RunbookAI` (con `C:` en mayúscula), por ejemplo después de `Set-Location C:\dev\RunbookAI`. No hace falta desactivar el chequeo.

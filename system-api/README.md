@@ -2,7 +2,17 @@
 
 System API in ASP.NET Core (.NET 10, Minimal APIs). Owns the original documents (Azurite / Blob), the document registry (MongoDB) and, from Phase 5, the conversations. Orchestrates the RAG service.
 
+## Run with Docker
+
+The service is part of the Compose stack (`docker compose up -d --build` from the repo root, in a terminal at `C:\dev\RunbookAI`). Compose passes the internal addresses (`mongo:27017`, `azurite:10000`, `rag-service:8000`) in `environment:`.
+
+- Swagger UI: http://localhost:5080/swagger
+- Logs: `docker compose logs -f system-api`
+- Rebuild after a change: `docker compose up -d --build system-api`
+
 ## Run locally (Windows)
+
+For debugging or hot reload. Stop the container first (`docker compose stop system-api`): both use port 5080.
 
 Requires the Compose stack (`docker compose up -d` from the repo root) and the RAG service on `localhost:8000`.
 

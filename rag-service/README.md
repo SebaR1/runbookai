@@ -2,7 +2,19 @@
 
 RAG service in Python + FastAPI: ingest (chunking + embeddings), retrieval from Chroma, and answer generation through an OpenAI-compatible API (Ollama today).
 
+## Run with Docker
+
+The service is part of the Compose stack (`docker compose up -d --build` from the repo root). Inside the container it reaches Chroma at `chroma:8000` and Ollama at `host.docker.internal:11434`.
+
+- Logs (one JSON line per ingest / retrieval / generation): `docker compose logs -f rag-service`
+- Inspect Chroma: `docker compose exec rag-service python -m scripts.inspect_chroma --limit 5`
+- Rebuild after a change: `docker compose up -d --build rag-service`
+
+The tests still run locally (`uv run pytest`): they use the code in-process, not the container.
+
 ## Run locally (Windows)
+
+For debugging or hot reload. Stop the container first (`docker compose stop rag-service`): both use port 8000.
 
 Requires the Compose stack (`docker compose up -d` from the repo root) and Ollama with `qwen3:8b` and `bge-m3`.
 

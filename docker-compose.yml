@@ -1,7 +1,10 @@
 name: runbookai
 
-# Infraestructura base (Fase 1). Las apps (front, system-api, rag-service)
-# se agregan en sus fases. Ollama corre en el host Windows, no acá.
+# Infraestructura (mongo, azurite, chroma) y apps (rag-service, system-api).
+# El front se agrega en la Fase 6. Ollama corre en el host Windows, no acá.
+#
+# Las direcciones internas (chroma:8000, azurite:10000, rag-service:8000) van en
+# el "environment:" de cada servicio, no en .env (ver .env.example).
 #
 # Los puertos se publican solo en 127.0.0.1: accesibles desde la máquina,
 # no desde la red local.
@@ -67,6 +70,72 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+
+  rag-service:
+    build: ./rag-service
+    restart: unless-stopped
+    environment:
+      CHROMA_URL: http://chroma:8000
+      # Ollama en el host Windows (la GPU AMD no llega a los contenedores).
+      OPENAI_BASE_URL: http://host.docker.internal:11434/v1
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-ollama}
+      LLM_MODEL: ${LLM_MODEL:-qwen3:8b}
+      LLM_REASONING_EFFORT: ${LLM_REASONING_EFFORT:-none}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-bge-m3}
+      EMBEDDING_DIMENSION: ${EMBEDDING_DIMENSION:-1024}
+    extra_hosts:
+      - "host.docker.internal:host-gateway" # automático en Docker Desktop; explícito para Linux
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      chroma:
+        condition: service_healthy
+    healthcheck:
+      # /health también verifica Ollama y los modelos: unhealthy si Ollama está apagado.
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=4)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  system-api:
+    build: ./system-api
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development # Swagger UI en /swagger
+      Mongo__ConnectionString: mongodb://mongo:27017
+      MONGO_ROOT_USER: ${MONGO_ROOT_USER:?definir en .env}
+      MONGO_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?definir en .env}
+      # Cuenta y clave públicas de Azurite (no son un secreto). UseDevelopmentStorage=true
+      # apunta a 127.0.0.1, que dentro del contenedor es el propio contenedor.
+      Blob__ConnectionString: >-
+        DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;
+      Rag__BaseUrl: http://rag-service:8000
+    ports:
+      - "127.0.0.1:5080:8080"
+    depends_on:
+      # Sin Mongo ni Azurite no arranca (crea índices y contenedor al iniciar).
+      mongo:
+        condition: service_healthy
+      azurite:
+        condition: service_healthy
+      # Sin el RAG sí puede funcionar: los documentos quedan en error y se reindexan después.
+      rag-service:
+        condition: service_started
+    healthcheck:
+      # La imagen de aspnet no trae curl: GET con /dev/tcp de bash.
+      test:
+        - CMD
+        - bash
+        - -c
+        - >-
+          exec 3<>/dev/tcp/127.0.0.1/8080 &&
+          printf 'GET /health HTTP/1.0\r\nHost: localhost\r\n\r\n' >&3 &&
+          grep -q ' 200 ' <&3
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
 volumes:
   mongo-data:
