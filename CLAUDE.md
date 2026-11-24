@@ -140,7 +140,7 @@ Borrar un documento implica tres cosas: borrar el archivo en Azurite, borrar sus
 
 **Fase 7: dockerizar y cerrar.** Dockerfiles de las tres aplicaciones, Compose completo con healthchecks y `depends_on`, README para levantarlo. Diagramas UML en `docs/`. *Lista cuando:* `docker compose up` lo levanta todo, con Ollama en el equipo.
 
-**Fase 8: evolución (de a una, opcional).** Pasar a OpenAI o Azure OpenAI y reindexar; búsqueda híbrida con reranking; usuarios con Entra ID (y Postgres si aparecen relaciones); ingesta asíncrona con cola (Azurite Queue Storage); observabilidad (OpenTelemetry); llevarlo a AKS (manifiestos, Key Vault, Blob real, Azure AI Search).
+**Fase 8: evolución (de a una, opcional). Fuera de alcance por ahora: el proyecto cierra en la Fase 7; se decide después si se retoma.** Pasar a OpenAI o Azure OpenAI y reindexar; búsqueda híbrida con reranking; usuarios con Entra ID (y Postgres si aparecen relaciones); ingesta asíncrona con cola (Azurite Queue Storage); observabilidad (OpenTelemetry); llevarlo a AKS (manifiestos, Key Vault, Blob real, Azure AI Search).
 
 ## Pendientes por definir
 
