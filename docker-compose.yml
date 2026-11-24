@@ -1,7 +1,7 @@
 name: runbookai
 
-# Infraestructura (mongo, azurite, chroma) y apps (rag-service, system-api).
-# El front se agrega en la Fase 6. Ollama corre en el host Windows, no acá.
+# Infraestructura (mongo, azurite, chroma) y apps (rag-service, system-api, front).
+# Ollama corre en el host Windows, no acá.
 #
 # Las direcciones internas (chroma:8000, azurite:10000, rag-service:8000) van en
 # el "environment:" de cada servicio, no en .env (ver .env.example).
@@ -136,6 +136,22 @@ services:
       timeout: 5s
       retries: 5
       start_period: 15s
+
+  front:
+    build: ./frontend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:80" # http://localhost:8080
+    depends_on:
+      system-api:
+        condition: service_healthy
+    healthcheck:
+      # busybox wget viene en la imagen alpine de nginx.
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
 
 volumes:
   mongo-data:

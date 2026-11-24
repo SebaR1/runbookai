@@ -147,6 +147,7 @@ Borrar un documento implica tres cosas: borrar el archivo en Azurite, borrar sus
 - **Nombre del proyecto:** "RunbookAI" es provisorio. Se cambia más adelante.
 - **Modelos concretos** (LLM y embeddings): se eligen en las fases 0 y 1, verificando la disponibilidad y la dimensión del modelo de embeddings en Ollama.
 - **Versiones de herramientas:** se verifican en la Fase 0.
+- **Prompt v4:** a veces el modelo cita lo que sale de la conversación como `[conversación previa]`, aunque el prompt v3 dice que eso no lleva cita. El front lo muestra como texto (solo `[n]` con fuente es cita). Ajustarlo con una corrida de la evaluación.
 
 ## Fuera de alcance por ahora
 

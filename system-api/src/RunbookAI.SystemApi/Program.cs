@@ -66,15 +66,27 @@ builder.Services.AddScoped<ChatService>();
 // --- HTTP ---
 // camelCase is the default for property names; enums too, configured once here.
 builder.Services.ConfigureHttpJsonOptions(o =>
-    o.SerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)));
+{
+    o.SerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+    // Numbers are numbers: the web default also accepts "12", and then OpenAPI types
+    // every integer as integer|string (and so does the front's generated client).
+    o.SerializerOptions.NumberHandling = JsonNumberHandling.Strict;
+});
 builder.Services.AddProblemDetails();
 builder.Services.AddHealthChecks();
-builder.Services.AddOpenApi(o => o.AddDocumentTransformer((document, _, _) =>
+builder.Services.AddOpenApi(o =>
 {
-    document.Info.Title = "RunbookAI System API";
-    document.Info.Description = "Owns the documents, their registry and the conversations. Orchestrates the RAG service.";
-    return Task.CompletedTask;
-}));
+    // 3.0, not the default 3.1: NSwag (the front's client) only partly supports 3.1.
+    o.OpenApiVersion = Microsoft.OpenApi.OpenApiSpecVersion.OpenApi3_0;
+    o.AddOperationTransformer<MultipartSchemaTransformer>();
+    o.AddSchemaTransformer<NullableEnumSchemaTransformer>();
+    o.AddDocumentTransformer((document, _, _) =>
+    {
+        document.Info.Title = "RunbookAI System API";
+        document.Info.Description = "Owns the documents, their registry and the conversations. Orchestrates the RAG service.";
+        return Task.CompletedTask;
+    });
+});
 
 var app = builder.Build();
 

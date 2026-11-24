@@ -17,8 +17,8 @@ Verificado en la Fase 0 (2026-11-23).
 | Docker Desktop (backend WSL2) | Docker 29.9.2 |
 | WSL | 3.0.5, kernel 6.18 |
 | .NET SDK | 10.0.102 (LTS) |
-| Node.js | 22.14.0 |
-| Angular CLI | 21.2.31 |
+| Node.js | 26.13.1 (LTS; actualizado en la Fase 6, Angular 22 pide 22.22.3+, 24.15+ o 26+) |
+| Angular CLI | 21.2.31 global; el proyecto usa su propio CLI 22.3.0 (`npx ng`) |
 | Python | 3.13.2 |
 | Git | 2.47.1 |
 

@@ -1,0 +1,33 @@
+@if (loadError(); as message) {
+  <div class="center">
+    <p class="alert error" role="alert">{{ message }}</p>
+  </div>
+} @else {
+  <header class="header">
+    <h1>{{ conversation()?.title || 'Conversación' }}</h1>
+    @if (conversation(); as c) {
+      <span class="badge" title="Namespace de la conversación (fijo)">{{ c.namespace }}</span>
+    }
+  </header>
+
+  <div class="scroller" #scroller>
+    <div class="messages" aria-live="polite">
+      @if (loading()) {
+        <p class="muted"><span class="spinner"></span> Cargando…</p>
+      } @else {
+        @for (m of messages(); track m.id) {
+          <app-message-view [message]="m" />
+        } @empty {
+          <p class="muted">Todavía no hay mensajes. Escribí tu primera pregunta.</p>
+        }
+      }
+    </div>
+  </div>
+
+  <footer class="footer">
+    @if (sendError(); as message) {
+      <p class="alert error" role="alert">{{ message }}</p>
+    }
+    <app-composer [disabled]="loading() || !conversation()" [streaming]="streaming()" (send)="send($event)" (stop)="stop()" />
+  </footer>
+}

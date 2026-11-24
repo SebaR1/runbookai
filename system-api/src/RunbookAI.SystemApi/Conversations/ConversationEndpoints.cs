@@ -54,12 +54,16 @@ public static class ConversationEndpoints
         await service.GetAsync(id, ct) is null ? NotFound() : TypedResults.Ok(await service.ListMessagesAsync(id, ct));
 
     private static async Task<Results<ServerSentEventsResult<object>, ProblemHttpResult>> SendAsync(
-        Guid id, SendMessageRequest request, ConversationService service, ChatService chat, CancellationToken ct)
+        Guid id, SendMessageRequest request, ConversationService service, ChatService chat,
+        HttpContext http, CancellationToken ct)
     {
         // Everything that can fail with a status code is checked before the stream:
         // once the 200 and the first event are sent, errors can only go in-band.
         if (await service.GetAsync(id, ct) is not { } conversation) return NotFound();
         if (service.ValidateMessage(request.Content, out var detail) is { } error) return Problem(error, detail);
+        // Tells nginx (the front's proxy, and ingress-nginx in AKS) not to buffer the
+        // stream, so each token reaches the browser as it is generated.
+        http.Response.Headers["X-Accel-Buffering"] = "no";
         return TypedResults.ServerSentEvents(chat.SendAsync(conversation, request.Content!, ct));
     }
 

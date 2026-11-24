@@ -91,7 +91,18 @@ curl.exe -s -H "Content-Type: application/json" --data-binary "@conv.json" http:
 curl.exe -N -H "Content-Type: application/json" --data-binary "@q.json" http://127.0.0.1:5080/conversations/<id>/messages
 ```
 
-Behind a proxy (nginx in Phase 6) buffering must be off for this route, or the tokens arrive all at once.
+Behind a proxy buffering must be off for this route, or the tokens arrive all at once. The response carries `X-Accel-Buffering: no` (honored by nginx and ingress-nginx), and the front's nginx also sets `proxy_buffering off` for it.
+
+## OpenAPI and the front's client
+
+The document is emitted as OpenAPI 3.0 (`/openapi/v1.json`), not the default 3.1: NSwag, which generates the front's TypeScript client, only partly supports 3.1. Two transformers in `Infrastructure/` adapt what NSwag misreads: multipart forms flattened into one object with the file as `format: binary`, and nullable enums without `null` among their values. Numbers are serialized strictly (no `"12"` accepted), so integers are typed as `integer` only.
+
+The front builds its client from a versioned copy, `frontend/src/app/api/system-api.openapi.json`. The test `OpenApiSnapshotTests` (integration: the app needs Mongo and Azurite to start) fails if it is out of date. To refresh it:
+
+```powershell
+$env:UPDATE_OPENAPI_SNAPSHOT = "1"; dotnet test -- --filter-method "*Front_snapshot*"; Remove-Item env:UPDATE_OPENAPI_SNAPSHOT
+cd ../frontend; npm run api:generate
+```
 
 ### Indexing
 

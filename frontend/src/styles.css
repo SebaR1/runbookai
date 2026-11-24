@@ -1,0 +1,242 @@
+/* Global tokens and the few shared pieces (buttons, inputs, badges, alerts).
+   Component styles stay small and use these variables. */
+
+:root {
+  color-scheme: light dark;
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --text: #1c2024;
+  --muted: #60646c;
+  --border: #dfe1e6;
+  --hover: #eef0f3;
+  --accent: #2f5bd3;
+  --accent-text: #ffffff;
+  --accent-soft: #e6edfc;
+  --danger: #c62a2f;
+  --danger-soft: #fdecec;
+  --warning: #9a5b00;
+  --warning-soft: #fff4dc;
+  --success: #1d7a46;
+  --success-soft: #e3f5ea;
+  --code-bg: #f0f1f4;
+  --radius: 6px;
+  --font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, 'Cascadia Code', Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111317;
+    --surface: #1a1d22;
+    --text: #e6e8eb;
+    --muted: #9ba1aa;
+    --border: #2e3239;
+    --hover: #252930;
+    --accent: #6f93f2;
+    --accent-text: #0d1424;
+    --accent-soft: #1f2b47;
+    --danger: #f07a7d;
+    --danger-soft: #3a1d1f;
+    --warning: #f0b45c;
+    --warning-soft: #3a2c14;
+    --success: #6fcf97;
+    --success-soft: #16301f;
+    --code-bg: #24282f;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.5 var(--font);
+}
+
+h1 {
+  font-size: 1.35rem;
+  margin: 0 0 16px;
+}
+
+h2 {
+  font-size: 1.05rem;
+  margin: 0 0 12px;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  padding: 7px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+button:hover:not(:disabled) {
+  background: var(--hover);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+button.primary:hover:not(:disabled) {
+  background: var(--accent);
+  filter: brightness(1.08);
+}
+
+button.danger {
+  color: var(--danger);
+}
+
+button.small {
+  padding: 3px 10px;
+  font-size: 0.85rem;
+}
+
+input[type='text'],
+select,
+textarea {
+  padding: 7px 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  background: var(--hover);
+  color: var(--muted);
+}
+
+.badge.pending,
+.badge.indexing,
+.badge.cancelled {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.badge.indexed {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.badge.error {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.alert {
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+}
+
+.alert.error {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.alert.warning {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.alert.info {
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+code {
+  font-family: var(--mono);
+  font-size: 0.88em;
+  background: var(--code-bg);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+pre.code {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  background: var(--code-bg);
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  overflow-x: auto;
+  margin: 6px 0;
+  white-space: pre;
+}
+
+.spinner {
+  display: inline-block;
+  width: 0.9em;
+  height: 0.9em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  vertical-align: -0.1em;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 2.5s;
+  }
+}

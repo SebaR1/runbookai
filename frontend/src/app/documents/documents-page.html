@@ -1,0 +1,122 @@
+<div class="container">
+  <h1>Documentos</h1>
+
+  <form class="card upload" #form (ngSubmit)="upload(form)">
+    <h2>Subir documento</h2>
+    <div class="fields">
+      <label class="file">
+        Archivo (Markdown, texto o PDF, hasta 20 MB)
+        <input type="file" [accept]="accept" (change)="onFileSelected($event)" required />
+      </label>
+      <label>
+        Título (opcional)
+        <input type="text" name="title" [(ngModel)]="title" placeholder="Por defecto, el nombre del archivo" />
+      </label>
+      <label>
+        Namespace
+        <input type="text" name="namespace" [(ngModel)]="namespace" list="namespaces" />
+        <datalist id="namespaces">
+          @for (ns of namespaces(); track ns) {
+            <option [value]="ns"></option>
+          }
+        </datalist>
+      </label>
+      <button class="primary" type="submit" [disabled]="!file() || uploading()">
+        @if (uploading()) {
+          <span class="spinner"></span> Subiendo…
+        } @else {
+          Subir
+        }
+      </button>
+    </div>
+    @if (uploadError(); as message) {
+      <p class="alert error" role="alert">{{ message }}</p>
+    }
+  </form>
+
+  <section class="card">
+    <div class="list-header">
+      <h2>Documentos indexados</h2>
+      <label class="inline">
+        Namespace
+        <select [ngModel]="filter()" (ngModelChange)="filter.set($event)">
+          <option value="">Todos</option>
+          @for (ns of namespaces(); track ns) {
+            <option [value]="ns">{{ ns }}</option>
+          }
+        </select>
+      </label>
+      <button class="small" type="button" (click)="load()" [disabled]="loading()">Actualizar</button>
+    </div>
+
+    @if (listError(); as message) {
+      <p class="alert error" role="alert">{{ message }}</p>
+    } @else if (loading() && documents().length === 0) {
+      <p class="muted"><span class="spinner"></span> Cargando…</p>
+    } @else if (visible().length === 0) {
+      <p class="muted">No hay documentos{{ filter() ? ' en este namespace' : '' }}. Subí uno para empezar.</p>
+    } @else {
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Título</th>
+              <th>Namespace</th>
+              <th>Estado</th>
+              <th class="num">Fragmentos</th>
+              <th class="num">Tamaño</th>
+              <th>Actualizado</th>
+              <th><span class="sr-only">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (doc of visible(); track doc.id) {
+              <tr [class.highlight]="highlighted() === doc.id">
+                <td>
+                  <div class="title">{{ doc.title }}</div>
+                  <div class="muted small">{{ doc.originalFileName }} · v{{ doc.version }}</div>
+                </td>
+                <td><span class="badge">{{ doc.namespace }}</span></td>
+                <td>
+                  <span class="badge" [class]="doc.status">
+                    @if (isInProgress(doc)) {
+                      <span class="spinner"></span>
+                    }
+                    {{ labels[doc.status] }}
+                  </span>
+                  @if (doc.status === 'error' && doc.errorDetail) {
+                    <div class="error-detail">{{ doc.errorDetail }}</div>
+                  }
+                </td>
+                <td class="num">{{ doc.chunkCount ?? '—' }}</td>
+                <td class="num">{{ formatBytes(doc.sizeBytes) }}</td>
+                <td class="nowrap">{{ doc.updatedAt | date: 'short' }}</td>
+                <td class="actions">
+                  @if (canReindex(doc)) {
+                    <button class="small" type="button" (click)="reindex(doc)" [disabled]="busy().has(doc.id)">
+                      Reindexar
+                    </button>
+                  }
+                  <button
+                    class="small danger"
+                    type="button"
+                    (click)="remove(doc)"
+                    [disabled]="!canDelete(doc) || busy().has(doc.id)"
+                    [title]="canDelete(doc) ? '' : 'No se puede borrar mientras se indexa'"
+                  >
+                    Borrar
+                  </button>
+                </td>
+              </tr>
+              @if (rowError()?.id === doc.id) {
+                <tr>
+                  <td colspan="7"><p class="alert error" role="alert">{{ rowError()!.message }}</p></td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+</div>
