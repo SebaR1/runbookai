@@ -92,9 +92,9 @@ flowchart LR
 
 **`documents`**: `id` (uuid), `title`, `originalFileName`, `blobName`, `namespace`, `sizeBytes`, `hash` (SHA-256), `version`, `status` (`pending` | `indexing` | `indexed` | `error` | `deleted`), `errorDetail`, `chunkCount`, `createdAt`, `updatedAt`, `indexedAt`.
 
-**`conversations`**: `id` (uuid), `userId`, `title`, `namespace`, `createdAt`.
+**`conversations`**: `id` (uuid), `userId` (null hasta que haya usuarios), `title` (si no se da, la primera pregunta), `namespace` (fijo por conversación), `createdAt`, `updatedAt` (última actividad, para listar).
 
-**`messages`** (colección aparte, índice por `conversationId` + `createdAt`): `id` (uuid), `conversationId`, `role` (`user` | `assistant`), `content`, `createdAt`. Solo en respuestas del asistente: `sources` (lista de `{documentId, chunkId, page, distance}`), `model`, `inputTokens`, `outputTokens`.
+**`messages`** (colección aparte, índice por `conversationId` + `createdAt`): `id` (uuid), `conversationId`, `role` (`user` | `assistant`), `content`, `createdAt`. Solo en respuestas del asistente: `status` (`completed` | `error` | `cancelled`), `errorDetail`, `sources` (lista de `{index, documentId, chunkId, title, page, section, distance}`, sin el texto del chunk), `model`, `inputTokens`, `outputTokens`. Al historial que se manda al RAG solo entran turnos `completed`.
 
 ### Chroma
 
@@ -119,7 +119,7 @@ Borrar un documento implica tres cosas: borrar el archivo en Azurite, borrar sus
 - Dentro de la red de Compose, los servicios se llaman por nombre (`http://rag-service:8000`, `http://chroma:8000`, `azurite:10000`). Fuera de Docker, `localhost`.
 - Azurite: dentro de Compose, usar el endpoint `azurite:10000` en la cadena de conexión. `UseDevelopmentStorage=true` solo sirve fuera de Docker.
 - Configuración por variables de entorno. `.env` no se versiona; `.env.example` sí. Ningún secreto en el repositorio.
-- Cada `/ask` registra en logs la pregunta, los chunks recuperados y sus distancias.
+- Cada `/ask` registra en logs la pregunta, la consulta con la que se buscó (`searchQuery`, que difiere si se reescribió un seguimiento), los chunks recuperados y sus distancias.
 - Datos persistentes (MongoDB, Chroma, Azurite) en volúmenes de Docker.
 
 ## Plan por fases

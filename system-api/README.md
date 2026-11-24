@@ -38,6 +38,9 @@ Options pattern, validated at startup. The defaults point to `localhost`; overri
 | `Blob__ContainerName` | `documents` | |
 | `Rag__BaseUrl` | `http://localhost:8000` | |
 | `Rag__Timeout` | `00:05:00` | Ingesting a large PDF takes time. |
+| `Rag__AskTimeout` | `00:03:00` | Limit for a whole streamed answer (the streaming client has no `HttpClient.Timeout`). |
+| `Conversations__HistoryMaxMessages` | `8` | Messages of history sent to the RAG (whole turns only). |
+| `Conversations__MaxMessageLength` | `4000` | |
 | `Documents__MaxFileSizeBytes` | `20971520` (20 MB) | |
 
 ## Endpoints
@@ -51,7 +54,44 @@ Options pattern, validated at startup. The defaults point to `localhost`; overri
 | POST | `/documents/{id}/reindex` | Back to `pending`. Only from `indexed` or `error`. |
 | DELETE | `/documents/{id}` | Chunks (RAG) → blobs → `deleted`. Idempotent. `409` while `indexing`, `502` if the RAG service fails (nothing is marked). |
 
+| POST | `/conversations` | JSON `{namespace?, title?}`. `201`. The namespace is fixed for the conversation; without a title, the first question becomes the title. |
+| GET | `/conversations?namespace=` | List, most recent activity (`updatedAt`) first. |
+| GET | `/conversations/{id}` | One conversation. |
+| GET | `/conversations/{id}/messages` | Messages in chronological order. |
+| POST | `/conversations/{id}/messages` | JSON `{content}`. Answers with SSE (see below). `404` / `400` before the stream starts. |
+
 Errors are ProblemDetails (RFC 9457) with `title` and `detail` in Spanish.
+
+### Chat streaming
+
+`POST /conversations/{id}/messages` saves the question, loads the history, calls the RAG `/ask` with a raw `HttpClient` (`ResponseHeadersRead` + `SseParser`, in `Rag/RagStreamClient.cs`) and forwards the answer as its own SSE events:
+
+| Event | Data |
+|---|---|
+| `start` | `{conversationId, userMessageId, assistantMessageId}` |
+| `sources` | `[{index, documentId, chunkId, title, page, section, distance}]` |
+| `token` | `{text}` (many) |
+| `done` | `{messageId, model, inputTokens, outputTokens}` |
+| `error` | `{messageId, message}` (message in Spanish, for the user) |
+
+The assistant message is inserted once, when the stream ends, with `status`:
+
+- `completed`: the RAG sent `done`. Sources, model and tokens are saved.
+- `error`: the RAG sent `error`, was down, or timed out. The partial text and `errorDetail` are saved; the client gets `error`.
+- `cancelled`: the client disconnected. The call to the RAG is cancelled too (Ollama stops generating) and the partial text is saved.
+
+Only complete turns (`user` answered by a `completed` assistant message) go into the history, the last `HistoryMaxMessages`, in chronological order. Two messages sent at the same time to the same conversation are not serialized (no users yet).
+
+With curl (the body in a UTF-8 file, so accents survive on Windows; `-N` disables buffering so the tokens show up as they arrive):
+
+```powershell
+'{"namespace":"default"}' | Out-File -Encoding ascii conv.json
+curl.exe -s -H "Content-Type: application/json" --data-binary "@conv.json" http://127.0.0.1:5080/conversations
+# q.json: {"content":"¿Cómo fuerzo un failover manual de orders-db?"}  (saved as UTF-8)
+curl.exe -N -H "Content-Type: application/json" --data-binary "@q.json" http://127.0.0.1:5080/conversations/<id>/messages
+```
+
+Behind a proxy (nginx in Phase 6) buffering must be off for this route, or the tokens arrive all at once.
 
 ### Indexing
 

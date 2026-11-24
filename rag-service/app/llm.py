@@ -50,8 +50,13 @@ class LLM:
             kwargs["reasoning_effort"] = self.settings.llm_reasoning_effort
         return kwargs
 
-    def chat(self, messages: list[dict[str, str]]) -> tuple[str, int | None, int | None]:
-        response = self.client.chat.completions.create(messages=messages, **self._chat_kwargs())
+    def chat(
+        self, messages: list[dict[str, str]], max_tokens: int | None = None
+    ) -> tuple[str, int | None, int | None]:
+        kwargs = self._chat_kwargs()
+        if max_tokens is not None:
+            kwargs["max_tokens"] = max_tokens
+        response = self.client.chat.completions.create(messages=messages, **kwargs)
         usage = response.usage
         return (
             response.choices[0].message.content or "",

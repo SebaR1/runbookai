@@ -35,8 +35,11 @@ class Settings(BaseSettings):
     top_k: int = 5
     # Chunks farther than this (cosine distance) are discarded before the LLM. None = keep all.
     max_distance: float | None = None
-    prompt_version: Literal["v1", "v2"] = "v2"
+    prompt_version: Literal["v1", "v2", "v3"] = "v3"
     history_max_messages: int = 8
+    # Rewrite follow-ups into a standalone question before searching (one extra,
+    # short LLM call, only when there is history). Phase 5.
+    query_rewrite: bool = True
 
     log_level: str = "INFO"
 

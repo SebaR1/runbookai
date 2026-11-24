@@ -10,7 +10,10 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from app.main import app, get_store
+from app.main import app, get_llm, get_store
+from app.pipeline import search_query
+from app.schemas import AskRequest, HistoryMessage
+from app.settings import get_settings
 
 pytestmark = pytest.mark.integration
 
@@ -110,3 +113,30 @@ def test_delete_unknown_document_is_idempotent(client):
     r = client.delete(f"/documents/{document_id}")
     assert r.status_code == 200
     assert r.json() == {"documentId": document_id, "deletedChunkCount": 0}
+
+
+def test_follow_up_is_rewritten_with_the_subject_from_the_history(client):
+    request = AskRequest(
+        question="¿Y cómo lo reinicio?",
+        history=[
+            HistoryMessage(role="user", content="¿Cuándo se dispara la alerta de latencia de payments-api?"),
+            HistoryMessage(role="assistant", content="Cuando el p95 supera los 800 ms durante 5 minutos [1]."),
+        ],
+    )
+    query, rewrite_ms = search_query(get_settings(), get_llm(), request)
+    assert rewrite_ms is not None
+    assert "payments" in query.lower()
+
+
+def test_follow_up_retrieves_the_right_section(client, ingested):
+    _, namespace, _ = ingested
+    r = client.post("/ask?stream=false", json={
+        "question": "¿Y cómo lo reinicio?",
+        "namespace": namespace,
+        "history": [
+            {"role": "user", "content": "¿Cuándo se dispara la alerta de latencia de payments-api?"},
+            {"role": "assistant", "content": "Cuando el p95 supera los 800 ms durante 5 minutos [1]."},
+        ],
+    })
+    assert r.status_code == 200, r.text
+    assert any("rollout restart" in s["text"] for s in r.json()["sources"])

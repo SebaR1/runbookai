@@ -6,6 +6,7 @@ using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
 using RunbookAI.SystemApi.Configuration;
+using RunbookAI.SystemApi.Conversations;
 using RunbookAI.SystemApi.Documents;
 
 namespace RunbookAI.SystemApi.Infrastructure;
@@ -13,6 +14,8 @@ namespace RunbookAI.SystemApi.Infrastructure;
 public static class MongoSetup
 {
     public const string DocumentsCollection = "documents";
+    public const string ConversationsCollection = "conversations";
+    public const string MessagesCollection = "messages";
 
     private static readonly Lock RegistrationLock = new();
     private static bool _registered;
@@ -31,6 +34,9 @@ public static class MongoSetup
                 new IgnoreExtraElementsConvention(true),
             };
             ConventionRegistry.Register("runbookai", pack, _ => true);
+            // User messages do not carry the assistant fields (status, sources, model...).
+            ConventionRegistry.Register("runbookai-messages",
+                new ConventionPack { new IgnoreIfNullConvention(true) }, t => t == typeof(Message));
             BsonSerializer.TryRegisterSerializer(new GuidSerializer(GuidRepresentation.Standard));
             _registered = true;
         }
@@ -55,6 +61,10 @@ public static class MongoSetup
             .GetDatabase(sp.GetRequiredService<IOptions<MongoOptions>>().Value.Database));
         services.AddSingleton(sp => sp.GetRequiredService<IMongoDatabase>()
             .GetCollection<Document>(DocumentsCollection));
+        services.AddSingleton(sp => sp.GetRequiredService<IMongoDatabase>()
+            .GetCollection<Conversation>(ConversationsCollection));
+        services.AddSingleton(sp => sp.GetRequiredService<IMongoDatabase>()
+            .GetCollection<Message>(MessagesCollection));
         return services;
     }
 
@@ -79,6 +89,21 @@ public static class MongoSetup
                 keys.Ascending(d => d.Namespace).Ascending(d => d.Status).Descending(d => d.CreatedAt),
                 new CreateIndexOptions { Name = "ix_namespace_status_createdAt" }),
         ], ct);
+    }
+
+    public static async Task EnsureConversationIndexesAsync(
+        IMongoCollection<Conversation> conversations, IMongoCollection<Message> messages, CancellationToken ct = default)
+    {
+        // Listing by namespace, most recent activity first.
+        await conversations.Indexes.CreateOneAsync(new CreateIndexModel<Conversation>(
+            Builders<Conversation>.IndexKeys.Ascending(c => c.Namespace).Descending(c => c.UpdatedAt),
+            new CreateIndexOptions { Name = "ix_namespace_updatedAt" }), cancellationToken: ct);
+
+        // Messages of a conversation in order, and the last N for the history (the
+        // same index walked backwards: no second index needed for the descending sort).
+        await messages.Indexes.CreateOneAsync(new CreateIndexModel<Message>(
+            Builders<Message>.IndexKeys.Ascending(m => m.ConversationId).Ascending(m => m.CreatedAt),
+            new CreateIndexOptions { Name = "ix_conversationId_createdAt" }), cancellationToken: ct);
     }
 }
 

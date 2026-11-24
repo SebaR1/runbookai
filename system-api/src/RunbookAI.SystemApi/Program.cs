@@ -4,6 +4,7 @@ using Azure.Storage.Blobs;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using RunbookAI.SystemApi.Configuration;
+using RunbookAI.SystemApi.Conversations;
 using RunbookAI.SystemApi.Documents;
 using RunbookAI.SystemApi.Infrastructure;
 using RunbookAI.SystemApi.Rag;
@@ -30,6 +31,7 @@ builder.Services.AddOptions<BlobOptions>()
     .ValidateOnStart();
 builder.Services.AddOptions<RagOptions>().BindConfiguration(RagOptions.Section).ValidateDataAnnotations().ValidateOnStart();
 builder.Services.AddOptions<DocumentsOptions>().BindConfiguration(DocumentsOptions.Section).ValidateDataAnnotations().ValidateOnStart();
+builder.Services.AddOptions<ConversationsOptions>().BindConfiguration(ConversationsOptions.Section).ValidateDataAnnotations().ValidateOnStart();
 
 // --- Infrastructure ---
 builder.Services.AddSingleton(TimeProvider.System);
@@ -42,12 +44,24 @@ builder.Services.AddHttpClient<IRagClient, RagClient>((sp, http) =>
     http.BaseAddress = new Uri(options.BaseUrl.ToString().TrimEnd('/') + "/");
     http.Timeout = options.Timeout;
 });
+// Streaming /ask: a second typed client over the same base URL, without
+// HttpClient.Timeout (the limit is RagOptions.AskTimeout, see RagStreamClient).
+builder.Services.AddHttpClient<RagStreamClient>((sp, http) =>
+{
+    var options = sp.GetRequiredService<IOptions<RagOptions>>().Value;
+    http.BaseAddress = new Uri(options.BaseUrl.ToString().TrimEnd('/') + "/");
+    http.Timeout = Timeout.InfiniteTimeSpan;
+});
 
 // --- Documents ---
 builder.Services.AddSingleton<IIndexingQueue, ChannelIndexingQueue>();
 builder.Services.AddScoped<DocumentService>();
 builder.Services.AddScoped<DocumentIndexer>();
 builder.Services.AddHostedService<IndexingWorker>();
+
+// --- Conversations ---
+builder.Services.AddScoped<ConversationService>();
+builder.Services.AddScoped<ChatService>();
 
 // --- HTTP ---
 // camelCase is the default for property names; enums too, configured once here.
@@ -58,7 +72,7 @@ builder.Services.AddHealthChecks();
 builder.Services.AddOpenApi(o => o.AddDocumentTransformer((document, _, _) =>
 {
     document.Info.Title = "RunbookAI System API";
-    document.Info.Description = "Owns the documents, their registry and (Phase 5) the conversations. Orchestrates the RAG service.";
+    document.Info.Description = "Owns the documents, their registry and the conversations. Orchestrates the RAG service.";
     return Task.CompletedTask;
 }));
 
@@ -76,10 +90,14 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapDocuments();
+app.MapConversations();
 app.MapHealthChecks("/health"); // liveness for the container healthcheck
 
 // Idempotent setup: indexes and blob container. Fails fast if Mongo or Azurite are down.
 await MongoSetup.EnsureIndexesAsync(app.Services.GetRequiredService<IMongoCollection<Document>>());
+await MongoSetup.EnsureConversationIndexesAsync(
+    app.Services.GetRequiredService<IMongoCollection<Conversation>>(),
+    app.Services.GetRequiredService<IMongoCollection<Message>>());
 await app.Services.GetRequiredService<BlobContainerClient>().CreateIfNotExistsAsync();
 
 app.Run();

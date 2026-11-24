@@ -12,12 +12,15 @@ from dataclasses import dataclass
 from app.chunking import build_chunks, chunk_id
 from app.extraction import extract_pages, source_type
 from app.llm import LLM
-from app.prompting import build_messages
+from app.prompting import build_messages, build_rewrite_messages, clean_rewrite
 from app.schemas import AskRequest, Source
 from app.settings import Settings
 from app.store import ChunkRecord, Store
 
 log = logging.getLogger("rag")
+
+# A standalone question fits easily; the cap stops a rewrite that starts answering.
+REWRITE_MAX_TOKENS = 100
 
 
 class EmptyDocument(ValueError):
@@ -87,10 +90,39 @@ def ingest_document(
     return IngestResult(chunk_count=len(records), doc_hash=doc_hash, title=title)
 
 
-def retrieve(settings: Settings, llm: LLM, store: Store, request: AskRequest) -> list[Source]:
+def search_query(settings: Settings, llm: LLM, request: AskRequest) -> tuple[str, int | None]:
+    """Text to embed: the question, or a standalone rewrite when there is history.
+
+    Returns (query, rewrite time in ms or None if no rewrite ran). A failed rewrite
+    falls back to the original question: it must never break the turn.
+    """
+    if not settings.query_rewrite or not request.history:
+        return request.question, None
+    started = time.perf_counter()
+    try:
+        output, _, _ = llm.chat(
+            build_rewrite_messages(request.question, request.history, settings.history_max_messages),
+            max_tokens=REWRITE_MAX_TOKENS,
+        )
+        query = clean_rewrite(output, request.question)
+    except Exception:
+        log.warning("query rewrite failed, searching with the original question", exc_info=True)
+        query = request.question
+    return query, round((time.perf_counter() - started) * 1000)
+
+
+@dataclass
+class Retrieval:
+    sources: list[Source]
+    # What was embedded: the question, or its standalone rewrite.
+    search_query: str
+
+
+def retrieve(settings: Settings, llm: LLM, store: Store, request: AskRequest) -> Retrieval:
     started = time.perf_counter()
     k = request.k or settings.top_k
-    [query_vector] = llm.embed([request.question])
+    query, rewrite_ms = search_query(settings, llm, request)
+    [query_vector] = llm.embed([query])
     hits = store.query(query_vector, request.namespace, k)
     discarded = 0
     if settings.max_distance is not None:
@@ -115,6 +147,9 @@ def retrieve(settings: Settings, llm: LLM, store: Store, request: AskRequest) ->
         "retrieval",
         extra={"data": {
             "question": request.question,
+            "searchQuery": query,
+            "rewriteMs": rewrite_ms,
+            "historyMessages": len(request.history),
             "namespace": request.namespace,
             "k": k,
             "maxDistance": settings.max_distance,
@@ -127,10 +162,11 @@ def retrieve(settings: Settings, llm: LLM, store: Store, request: AskRequest) ->
             ],
         }},
     )
-    return sources
+    return Retrieval(sources=sources, search_query=query)
 
 
-def messages_for(settings: Settings, request: AskRequest, sources: list[Source]) -> list[dict[str, str]]:
+def messages_for(settings: Settings, request: AskRequest, retrieval: Retrieval) -> list[dict[str, str]]:
     return build_messages(
-        request.question, sources, request.history, settings.history_max_messages, settings.prompt_version
+        request.question, retrieval.sources, request.history, settings.history_max_messages,
+        settings.prompt_version, search_query=retrieval.search_query,
     )

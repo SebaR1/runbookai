@@ -44,6 +44,23 @@ public sealed class RagOptions
     // Ingesting a large PDF means many embeddings: the default 100 s of HttpClient
     // is not enough.
     public TimeSpan Timeout { get; set; } = TimeSpan.FromMinutes(5);
+
+    // Limit for a whole streamed answer of /ask (rewrite + retrieval + generation).
+    // The streaming client has no HttpClient.Timeout: with ResponseHeadersRead it
+    // would only cover until the headers.
+    public TimeSpan AskTimeout { get; set; } = TimeSpan.FromMinutes(3);
+}
+
+public sealed class ConversationsOptions
+{
+    public const string Section = "Conversations";
+
+    // Messages of history sent to the RAG service (whole turns, so even numbers).
+    // The System API cuts it because it owns the conversation; the RAG service keeps
+    // its own history_max_messages as a safety net.
+    [Range(0, 50)] public int HistoryMaxMessages { get; set; } = 8;
+
+    [Range(1, 20_000)] public int MaxMessageLength { get; set; } = 4000;
 }
 
 public sealed class DocumentsOptions

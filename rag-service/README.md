@@ -38,6 +38,12 @@ The configuration comes from environment variables or from `rag-service/.env` (s
 | DELETE | `/documents/{documentId}` | Deletes every chunk of the document. Idempotent: returns `deletedChunkCount` (0 if there was nothing). |
 | POST | `/ask` | JSON `{question, namespace, history, k}`. SSE by default (events `sources`, `token`, `done`, `error`); `?stream=false` returns JSON. |
 
+### Follow-up questions
+
+With `history`, the question is first rewritten into a standalone one by a short LLM call ("¿Y eso cuánto tarda?" → "¿Cuánto tarda el failover de orders-db?"). The rewrite is only used to **search** and as an "Interpretación" line under the original question in the answer prompt; the original question always stays. If the rewrite fails, the original question is used. Disable it with `QUERY_REWRITE=false`. The `retrieval` log line has `question`, `searchQuery` and `rewriteMs`.
+
+Prompt `v3` (default) also lets the model answer from what the user said in the conversation (for example their name), while technical facts still have to come from the retrieved context, with citations.
+
 ## Examples (curl)
 
 ```bash
@@ -70,6 +76,7 @@ uv run python -m scripts.inspect_chroma --document-id <id> --limit 5
 ```bash
 uv run python -m scripts.run_eval                                  # current defaults vs eval/baseline.json
 uv run python -m scripts.run_eval --strategy paragraph --k 3 --prompt v1 --tag my-test
+uv run python -m scripts.run_eval --prompt v2 --no-rewrite --tag before-phase-5
 uv run python -m scripts.make_pdfs                                 # regenerate the PDF corpus
 ```
 

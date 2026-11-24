@@ -143,8 +143,9 @@ def ask(
     store: StoreDep,
     stream: Annotated[bool, Query(description="Stream the answer as Server-Sent Events")] = True,
 ):
-    sources = retrieve(settings, llm, store, request)
-    messages = messages_for(settings, request, sources)
+    retrieval = retrieve(settings, llm, store, request)
+    sources = retrieval.sources
+    messages = messages_for(settings, request, retrieval)
 
     if not stream:
         started = time.perf_counter()

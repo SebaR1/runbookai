@@ -8,6 +8,11 @@ Usage (from rag-service/):
     uv run python -m scripts.run_eval                       # current defaults
     uv run python -m scripts.run_eval --save-baseline       # store as baseline
     uv run python -m scripts.run_eval --strategy heading --chunk-size 500 --k 3 --prompt v2
+    uv run python -m scripts.run_eval --prompt v3 --no-rewrite
+
+Questions with "history" (types followup and conversation, Phase 5) get their own
+metrics; the original metrics are computed only over the questions without
+history, so they stay comparable with older baselines.
 """
 
 import argparse
@@ -24,7 +29,7 @@ from pathlib import Path
 from app.llm import LLM
 from app.pipeline import ingest_document, messages_for, retrieve
 from app.prompting import NO_INFO_ANSWER
-from app.schemas import AskRequest
+from app.schemas import AskRequest, HistoryMessage
 from app.settings import get_settings
 from app.store import Store
 
@@ -52,6 +57,9 @@ METRICS = [
     ("abstentionAccuracy", "Abstención correcta (sin respuesta en el corpus)"),
     ("abstentionExact", "Abstención con la frase fija (detectable por la UI)"),
     ("falseAbstention", "Abstención indebida (sí había respuesta)"),
+    ("followupHit", "Seguimiento: evidencia recuperada"),
+    ("followupAccuracy", "Seguimiento: respuestas correctas"),
+    ("conversationAccuracy", "Conversación: responde con el historial"),
     ("avgLatencyMs", "Latencia media (ms)"),
     ("avgInputTokens", "Tokens de entrada (media)"),
 ]
@@ -73,6 +81,11 @@ def is_abstention(answer: str) -> bool:
     return any(normalize(p) in normalize(answer) for p in ABSTENTION_PHRASES)
 
 
+def _mean(values) -> float | None:
+    values = list(values)
+    return statistics.mean(values) if values else None
+
+
 def evaluate(args: argparse.Namespace) -> dict:
     overrides = {
         "chunk_strategy": args.strategy,
@@ -81,6 +94,7 @@ def evaluate(args: argparse.Namespace) -> dict:
         "top_k": args.k,
         "prompt_version": args.prompt,
         "max_distance": args.max_distance,
+        "query_rewrite": False if args.no_rewrite else None,
         "llm_temperature": 0.0,  # as deterministic as possible, so runs are comparable
     }
     base = get_settings()
@@ -104,17 +118,19 @@ def evaluate(args: argparse.Namespace) -> dict:
         rows = []
         for q in questions:
             started = time.perf_counter()
-            request = AskRequest(question=q["question"], namespace=namespace)
-            sources = retrieve(settings, llm, store, request)
+            history = [HistoryMessage(**m) for m in q.get("history", [])]
+            request = AskRequest(question=q["question"], namespace=namespace, history=history)
+            retrieval = retrieve(settings, llm, store, request)
+            sources = retrieval.sources
             if sources:
-                answer, tokens_in, tokens_out = llm.chat(messages_for(settings, request, sources))
+                answer, tokens_in, tokens_out = llm.chat(messages_for(settings, request, retrieval))
             else:
                 answer, tokens_in, tokens_out = NO_INFO_ANSWER, 0, 0
             latency = round((time.perf_counter() - started) * 1000)
 
             answerable = q["type"] != "unanswerable"
             rank = None
-            if answerable:
+            if "evidence" in q:
                 evidence = normalize(q["evidence"])
                 rank = next((s.index for s in sources if evidence in normalize(s.text)), None)
             facts = q.get("mustInclude", [])
@@ -122,9 +138,10 @@ def evaluate(args: argparse.Namespace) -> dict:
             abstained = is_abstention(answer)
             rows.append({
                 "id": q["id"], "type": q["type"], "question": q["question"],
+                "searchQuery": retrieval.search_query,
                 "answer": answer, "abstained": abstained,
                 "evidenceRank": rank,
-                "expectedDocRetrieved": answerable and any(s.document_id == doc_ids.get(q["document"]) for s in sources),
+                "expectedDocRetrieved": "document" in q and any(s.document_id == doc_ids.get(q["document"]) for s in sources),
                 "factsFound": sum(found), "factsTotal": len(facts),
                 "cited": bool(CITATION.search(answer)),
                 "latencyMs": latency, "inputTokens": tokens_in, "outputTokens": tokens_out,
@@ -136,8 +153,11 @@ def evaluate(args: argparse.Namespace) -> dict:
     finally:
         store.collection.delete(where={"namespace": namespace})
 
-    answerable_rows = [r for r in rows if r["type"] != "unanswerable"]
-    unanswerable_rows = [r for r in rows if r["type"] == "unanswerable"]
+    single = [r for r in rows if r["type"] not in ("followup", "conversation")]
+    answerable_rows = [r for r in single if r["type"] != "unanswerable"]
+    unanswerable_rows = [r for r in single if r["type"] == "unanswerable"]
+    followup_rows = [r for r in rows if r["type"] == "followup"]
+    conversation_rows = [r for r in rows if r["type"] == "conversation"]
     metrics = {
         "retrievalHit": statistics.mean(r["evidenceRank"] is not None for r in answerable_rows),
         "mrr": statistics.mean(1 / r["evidenceRank"] if r["evidenceRank"] else 0 for r in answerable_rows),
@@ -147,6 +167,9 @@ def evaluate(args: argparse.Namespace) -> dict:
         "abstentionAccuracy": statistics.mean(r["abstained"] for r in unanswerable_rows),
         "abstentionExact": statistics.mean(r["answer"].strip() == NO_INFO_ANSWER for r in unanswerable_rows),
         "falseAbstention": statistics.mean(r["abstained"] for r in answerable_rows),
+        "followupHit": _mean(r["evidenceRank"] is not None for r in followup_rows),
+        "followupAccuracy": _mean(r["factsFound"] == r["factsTotal"] and not r["abstained"] for r in followup_rows),
+        "conversationAccuracy": _mean(r["factsFound"] == r["factsTotal"] for r in conversation_rows),
         "avgLatencyMs": statistics.mean(r["latencyMs"] for r in rows),
         "avgInputTokens": statistics.mean(r["inputTokens"] or 0 for r in rows),
     }
@@ -159,7 +182,9 @@ def print_report(result: dict, baseline: dict | None) -> None:
     header = f"{'Métrica':<52} {'Valor':>8}" + (f" {'Base':>8} {'Delta':>8}" if baseline else "")
     print(header + "\n" + "-" * len(header))
     for key, label in METRICS:
-        value = result["metrics"][key]
+        value = result["metrics"].get(key)
+        if value is None:
+            continue
         fmt = (lambda v: f"{v:8.0f}") if key.startswith("avg") else (lambda v: f"{v:8.2f}")
         line = f"{label:<52} {fmt(value)}"
         if baseline:
@@ -180,7 +205,8 @@ def main() -> None:
     parser.add_argument("--chunk-size", type=int)
     parser.add_argument("--overlap", type=int)
     parser.add_argument("--k", type=int)
-    parser.add_argument("--prompt", choices=["v1", "v2"])
+    parser.add_argument("--prompt", choices=["v1", "v2", "v3"])
+    parser.add_argument("--no-rewrite", action="store_true", help="Disable query rewriting for follow-ups")
     parser.add_argument("--max-distance", type=float)
     parser.add_argument("--tag", default="run")
     parser.add_argument("--save-baseline", action="store_true")

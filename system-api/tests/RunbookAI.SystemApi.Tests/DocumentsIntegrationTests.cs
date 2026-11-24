@@ -13,8 +13,7 @@ namespace RunbookAI.SystemApi.Tests;
 [Trait("Category", "Integration")]
 public class DocumentsIntegrationTests(SystemApiFixture fx) : IClassFixture<SystemApiFixture>
 {
-    private static readonly string RepoRoot = FindRepoRoot();
-    private static readonly string SampleRunbook = Path.Combine(RepoRoot, "rag-service", "eval", "corpus", "runbook-pagos.md");
+    private static readonly string SampleRunbook = SystemApiFixture.SampleRunbook;
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
@@ -176,7 +175,7 @@ public class DocumentsIntegrationTests(SystemApiFixture fx) : IClassFixture<Syst
 
     // ---- helpers ----
 
-    private static string NewNamespace() => $"test-{Guid.NewGuid():N}"[..20];
+    private static string NewNamespace() => SystemApiFixture.NewNamespace();
 
     private static byte[] Text(string value) => Encoding.UTF8.GetBytes(value);
 
@@ -212,12 +211,5 @@ public class DocumentsIntegrationTests(SystemApiFixture fx) : IClassFixture<Syst
         var response = await fx.Rag.DeleteAsync($"/documents/{id}", Ct);
         response.EnsureSuccessStatusCode();
         return (await ReadAsync<JsonElement>(response)).GetProperty("deletedChunkCount").GetInt32();
-    }
-
-    private static string FindRepoRoot()
-    {
-        var dir = new DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "CLAUDE.md"))) dir = dir.Parent;
-        return dir?.FullName ?? throw new InvalidOperationException("Repository root (CLAUDE.md) not found");
     }
 }

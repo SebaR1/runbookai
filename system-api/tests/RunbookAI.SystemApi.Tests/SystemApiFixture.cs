@@ -5,6 +5,7 @@ using Azure.Storage.Blobs;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
+using RunbookAI.SystemApi.Conversations;
 using RunbookAI.SystemApi.Documents;
 
 namespace RunbookAI.SystemApi.Tests;
@@ -19,6 +20,11 @@ namespace RunbookAI.SystemApi.Tests;
 public sealed class SystemApiFixture : IAsyncLifetime
 {
     public const string RagUrl = "http://localhost:8000";
+
+    public static readonly string RepoRoot = FindRepoRoot();
+    public static readonly string SampleRunbook = Path.Combine(RepoRoot, "rag-service", "eval", "corpus", "runbook-pagos.md");
+
+    public static string NewNamespace() => $"test-{Guid.NewGuid():N}"[..20];
 
     public static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
     {
@@ -36,6 +42,7 @@ public sealed class SystemApiFixture : IAsyncLifetime
     public HttpClient Rag { get; } = new() { BaseAddress = new Uri(RagUrl), Timeout = TimeSpan.FromSeconds(10) };
     public IMongoCollection<Document> Documents => Services.GetRequiredService<IMongoCollection<Document>>();
     public BlobContainerClient Blobs => Services.GetRequiredService<BlobContainerClient>();
+    public IMongoCollection<Message> Messages => Services.GetRequiredService<IMongoCollection<Message>>();
     private IServiceProvider Services => _factory!.Services;
 
     public async ValueTask InitializeAsync()
@@ -122,5 +129,12 @@ public sealed class SystemApiFixture : IAsyncLifetime
         {
             return $"RAG service not available at {RagUrl}: {ex.GetType().Name}";
         }
+    }
+
+    private static string FindRepoRoot()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "CLAUDE.md"))) dir = dir.Parent;
+        return dir?.FullName ?? throw new InvalidOperationException("Repository root (CLAUDE.md) not found");
     }
 }
